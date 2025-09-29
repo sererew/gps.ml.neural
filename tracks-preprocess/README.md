@@ -9,8 +9,7 @@ This tool processes folders of GPX files organized by families and generates str
 ## Usage
 
 ```bash
-java -jar tracks-preprocess-1.0.0-SNAPSHOT.jar \
-  --input ./data/raw --output ./data/processed --step 1.0 --filter sgolay
+preprocess.bat --input ./data/raw --output ./data/processed --step 1.0 --filter sgolay
 ```
 
 ## Parameters
@@ -107,21 +106,18 @@ For each family, labels are computed from the pattern track:
 
 ### Basic preprocessing
 ```bash
-java -jar tracks-preprocess-1.0.0-SNAPSHOT.jar \
-  --input ./gps_data --output ./processed_data
+preprocess.bat --input ./gps_data --output ./processed_data
 ```
 
 ### With 2-meter resampling and median altitude filtering
 ```bash
-java -jar tracks-preprocess-1.0.0-SNAPSHOT.jar \
-  --input ./raw_tracks --output ./clean_tracks \
+preprocess.bat --input ./raw_tracks --output ./clean_tracks \
   --step 2.0 --filter median
 ```
 
 ### With Savitzky-Golay smoothing
 ```bash
-java -jar tracks-preprocess-1.0.0-SNAPSHOT.jar \
-  --input ./input_dir --output ./output_dir \
+preprocess.bat --input ./input_dir --output ./output_dir \
   --step 1.5 --filter sgolay
 ```
 

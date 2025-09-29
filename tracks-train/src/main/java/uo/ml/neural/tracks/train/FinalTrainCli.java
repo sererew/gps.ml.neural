@@ -28,20 +28,28 @@ import uo.ml.neural.tracks.train.model.ModelFactory;
 )
 public class FinalTrainCli implements Callable<Integer> {
     
-    @Option(names = {"--data"}, required = true,
-            description = "Processed data directory (output of preprocessing)")
+    @Option(names = {"--data"}, 
+    		required = true,
+            description = "Processed data directory (output of preprocessing)"
+    )
     private Path dataDir;
     
-    @Option(names = {"--out"}, required = true,
-            description = "Output directory for trained model")
+    @Option(names = {"--out"}, 
+    		required = true,
+            description = "Output directory for trained model"
+    )
     private Path outputDir;
     
-    @Option(names = {"--epochs"}, defaultValue = "150",
-            description = "Number of training epochs (default: ${DEFAULT-VALUE})")
+    @Option(names = {"--epochs"}, 
+    		defaultValue = "150",
+            description = "Number of training epochs (default: ${DEFAULT-VALUE})"
+    )
     private int epochs;
     
-    @Option(names = {"--lr"}, defaultValue = "0.001",
-            description = "Learning rate (default: ${DEFAULT-VALUE})")
+    @Option(names = {"--lr"}, 
+    		defaultValue = "0.001",
+            description = "Learning rate (default: ${DEFAULT-VALUE})"
+    )
     private double learningRate;
     
     public static void main(String[] args) {

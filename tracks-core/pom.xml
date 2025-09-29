@@ -25,16 +25,21 @@
         </dependency>
         <dependency>
             <groupId>org.locationtech.proj4j</groupId>
-            <artifactId>proj4j</artifactId>
+			<artifactId>proj4j</artifactId>
             <version>${proj4j.version}</version>
         </dependency>
+		<dependency>
+		    <groupId>org.locationtech.proj4j</groupId>
+		    <artifactId>proj4j-epsg</artifactId>
+            <version>${proj4j.version}</version>
+		</dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
         </dependency>
-        
-        <!-- Test dependencies -->
+
+		<!-- Test dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>

@@ -1,11 +1,5 @@
 package uo.ml.neural.tracks.train.data;
 
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import uo.ml.neural.tracks.core.model.SegmentFeature;
-import uo.ml.neural.tracks.core.preprocess.Padding;
-import uo.ml.neural.tracks.core.preprocess.ZScoreScaler;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,7 +7,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+
+import uo.ml.neural.tracks.core.model.SegmentFeature;
+import uo.ml.neural.tracks.core.preprocess.Padding;
+import uo.ml.neural.tracks.core.preprocess.ZScoreScaler;
 
 /**
  * Dataset loader for sequence data from preprocessed GPS tracks.
