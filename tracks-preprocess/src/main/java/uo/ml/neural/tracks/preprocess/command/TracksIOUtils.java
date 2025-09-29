@@ -1,11 +1,13 @@
 package uo.ml.neural.tracks.preprocess.command;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import uo.ml.neural.tracks.core.exception.CommandException;
 import uo.ml.neural.tracks.core.model.SegmentFeature;
 
 public class TracksIOUtils {
@@ -43,11 +45,15 @@ public class TracksIOUtils {
 		Files.writeString(lengthFile, String.valueOf(length));
 	}
 
-	public static void createOutputDirectories(Path outputDir)
-			throws Exception {
-		Files.createDirectories(outputDir);
-		Files.createDirectories(outputDir.resolve("features"));
-		Files.createDirectories(outputDir.resolve("labels"));
-		Files.createDirectories(outputDir.resolve("lengths"));
+	public static void createOutputDirectories(Path outputDir) {
+		try {
+			Files.createDirectories(outputDir);
+			Files.createDirectories(outputDir.resolve("features"));
+			Files.createDirectories(outputDir.resolve("labels"));
+			Files.createDirectories(outputDir.resolve("lengths"));
+		} catch (IOException e) {
+			throw new CommandException(
+					"Failed to create output directories: " + e.getMessage(), e);
+		}
 	}
 }

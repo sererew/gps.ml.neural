@@ -6,6 +6,7 @@ import java.util.concurrent.Callable;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+import uo.ml.neural.tracks.core.exception.CommandException;
 import uo.ml.neural.tracks.preprocess.command.TracksPreprocessingService;
 import uo.ml.neural.tracks.preprocess.model.FilterType;
 
@@ -50,12 +51,25 @@ public class PreprocessCli implements Callable<Integer> {
 	}
 
 	@Override
-	public Integer call() throws Exception {
-		return new TracksPreprocessingService(
-				inputDir, 
-				outputDir, 
-				stepMeters, 
-				filter
-			).preprocess();
+	public Integer call() {
+		try {
+			
+			new TracksPreprocessingService(
+					inputDir, 
+					outputDir, 
+					stepMeters, 
+					filter
+				).preprocess();
+			
+			return 0;
+			
+        } catch (CommandException e) {
+            System.err.println("ERROR: " + e.getMessage());
+            return 1;
+            
+        } catch (Exception e) {
+            System.err.println("Unexpected error: " + e.getMessage());
+            return 1;
+        }
 	}
 }

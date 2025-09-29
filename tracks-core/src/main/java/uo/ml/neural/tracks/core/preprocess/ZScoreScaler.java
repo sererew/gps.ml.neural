@@ -1,17 +1,20 @@
 package uo.ml.neural.tracks.core.preprocess;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import uo.ml.neural.tracks.core.model.SegmentFeature;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import uo.ml.neural.tracks.core.exception.IO;
+import uo.ml.neural.tracks.core.model.SegmentFeature;
+
 /**
  * Z-Score scaler for normalizing segment features.
- * Computes mean and standard deviation for each feature dimension and applies z-score normalization.
+ * Computes mean and standard deviation for each feature dimension and applies 
+ * z-score normalization.
  * Supports saving/loading scaler parameters to/from JSON files.
  */
 public class ZScoreScaler {
@@ -117,10 +120,9 @@ public class ZScoreScaler {
      * Saves the scaler parameters to a JSON file.
      * 
      * @param path Path to save the JSON file
-     * @throws IOException if file cannot be written
      */
-    public void save(Path path) throws IOException {
-        OBJECT_MAPPER.writeValue(path.toFile(), this);
+    public void save(Path path) {
+    	IO.shallow(() -> OBJECT_MAPPER.writeValue(path.toFile(), this));
     }
     
     /**
@@ -130,8 +132,8 @@ public class ZScoreScaler {
      * @return Loaded ZScoreScaler
      * @throws IOException if file cannot be read or parsed
      */
-    public static ZScoreScaler load(Path path) throws IOException {
-        return OBJECT_MAPPER.readValue(path.toFile(), ZScoreScaler.class);
+    public static ZScoreScaler load(Path path) {
+    	return IO.get(() -> OBJECT_MAPPER.readValue(path.toFile(), ZScoreScaler.class));
     }
     
     // Getters for JSON serialization

@@ -11,6 +11,8 @@ import java.util.Map;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import uo.ml.neural.tracks.core.exception.CommandException;
+import uo.ml.neural.tracks.core.exception.IO;
 import uo.ml.neural.tracks.core.model.SegmentFeature;
 import uo.ml.neural.tracks.core.preprocess.Padding;
 import uo.ml.neural.tracks.core.preprocess.ZScoreScaler;
@@ -27,8 +29,13 @@ public class SequenceDataset {
     private final List<String> trackNames;
     private final List<String> familyNames;
     
-    private SequenceDataset(INDArray features, INDArray featuresMask, INDArray labels, 
-                           List<String> trackNames, List<String> familyNames) {
+    private SequenceDataset(
+    		INDArray features, 
+    		INDArray featuresMask, 
+    		INDArray labels, 
+            List<String> trackNames, 
+            List<String> familyNames) {
+    	
         this.features = features;
         this.featuresMask = featuresMask;
         this.labels = labels;
@@ -39,11 +46,12 @@ public class SequenceDataset {
     /**
      * Loads dataset from preprocessed directory structure.
      * 
-     * @param processedDir Directory containing features/, labels/, lengths/, and mu_sigma.json
+     * @param processedDir Directory containing features/, labels/, lengths/, 
+     * 		and mu_sigma.json
      * @return Loaded and normalized dataset
      * @throws IOException if data cannot be loaded
      */
-    public static SequenceDataset load(Path processedDir) throws IOException {
+    public static SequenceDataset load(Path processedDir) {
         return load(processedDir, null);
     }
     
@@ -55,7 +63,7 @@ public class SequenceDataset {
      * @return Loaded and normalized dataset
      * @throws IOException if data cannot be loaded
      */
-    public static SequenceDataset load(Path processedDir, List<String> excludeFamilies) throws IOException {
+    public static SequenceDataset load(Path processedDir, List<String> excludeFamilies) {
         Path featuresDir = processedDir.resolve("features");
         Path labelsDir = processedDir.resolve("labels");
         Path lengthsDir = processedDir.resolve("lengths");
@@ -63,7 +71,7 @@ public class SequenceDataset {
         
         if (!Files.exists(featuresDir) || !Files.exists(labelsDir) || 
             !Files.exists(lengthsDir) || !Files.exists(scalerPath)) {
-            throw new IOException("Missing required directories or files in: " + processedDir);
+            throw new CommandException("Missing required directories or files in: " + processedDir);
         }
         
         // Load Z-score scaler
@@ -71,7 +79,7 @@ public class SequenceDataset {
         
         // Find all families
         List<String> allFamilies;
-        try (var stream = Files.list(featuresDir)) {
+        try (var stream = IO.get(() -> Files.list(featuresDir))) {
             allFamilies = stream
                 .filter(Files::isDirectory)
                 .map(p -> p.getFileName().toString())
@@ -84,7 +92,7 @@ public class SequenceDataset {
             .toList();
         
         if (familiesToProcess.isEmpty()) {
-            throw new IOException("No families to process after exclusions");
+            throw new CommandException("No families to process after exclusions");
         }
         
         // Load all data
@@ -100,52 +108,50 @@ public class SequenceDataset {
             Path familyFeaturesDir = featuresDir.resolve(family);
             Path familyLengthsDir = lengthsDir.resolve(family);
             
-            try (var stream = Files.list(familyFeaturesDir)) {
-                List<Path> csvFiles = stream
-                    .filter(p -> p.getFileName().toString().endsWith(".csv"))
+            List<Path> csvFiles = IO.get(() -> Files.list(familyFeaturesDir))
+            		.filter(p -> p.getFileName().toString().endsWith(".csv"))
+            		.toList();
+            
+            for (Path csvFile : csvFiles) {
+                String trackName = getBaseName(csvFile);
+                Path lengthFile = familyLengthsDir.resolve(trackName + ".txt");
+                
+                List<SegmentFeature> rawFeatures = loadTrackFeatures(csvFile);
+                int length = loadTrackLength(lengthFile);
+                
+                // Apply normalization
+                List<SegmentFeature> normalizedFeatures = rawFeatures.stream()
+                    .map(scaler::transform)
                     .toList();
                 
-                for (Path csvFile : csvFiles) {
-                    String trackName = getBaseName(csvFile);
-                    Path lengthFile = familyLengthsDir.resolve(trackName + ".txt");
-                    
-                    List<SegmentFeature> rawFeatures = loadTrackFeatures(csvFile);
-                    int length = loadTrackLength(lengthFile);
-                    
-                    // Apply normalization
-                    List<SegmentFeature> normalizedFeatures = rawFeatures.stream()
-                        .map(scaler::transform)
-                        .toList();
-                    
-                    allTracks.add(
-                    		new TrackData(family + "/" + trackName, 
-                    				family, 
-                                    normalizedFeatures, 
-                                    length, 
-                                    labels
-                                 )
-                    	);
-                }
+                allTracks.add(
+                		new TrackData(family + "/" + trackName, 
+                				family, 
+                                normalizedFeatures, 
+                                length, 
+                                labels
+                             )
+                	);
             }
         }
         
         if (allTracks.isEmpty()) {
-            throw new IOException("No tracks loaded");
+            throw new CommandException("No tracks loaded");
         }
         
         // Convert to INDArrays
         return convertToArrays(allTracks);
     }
     
-    private static double[] loadFamilyLabels(Path labelsFile) throws IOException {
-        List<String> lines = Files.readAllLines(labelsFile);
+    private static double[] loadFamilyLabels(Path labelsFile) {
+        List<String> lines = IO.get(() -> Files.readAllLines(labelsFile));
         if (lines.size() < 2) {
-            throw new IOException("Invalid labels file format: " + labelsFile);
+            throw new CommandException("Invalid labels file format: " + labelsFile);
         }
         
         String[] values = lines.get(1).split(","); // Skip header
         if (values.length != 3) {
-            throw new IOException("Expected 3 label values, got " + values.length + " in: " + labelsFile);
+            throw new CommandException("Expected 3 label values, got " + values.length + " in: " + labelsFile);
         }
         
         return new double[]{
@@ -155,14 +161,16 @@ public class SequenceDataset {
         };
     }
     
-    private static List<SegmentFeature> loadTrackFeatures(Path csvFile) throws IOException {
-        List<String> lines = Files.readAllLines(csvFile);
+    private static List<SegmentFeature> loadTrackFeatures(Path csvFile) {
+        List<String> lines = IO.get(() -> Files.readAllLines(csvFile));
         List<SegmentFeature> features = new ArrayList<>();
         
         for (int i = 1; i < lines.size(); i++) { // Skip header
             String[] values = lines.get(i).split(",");
             if (values.length != 3) {
-                throw new IOException("Expected 3 feature values, got " + values.length + " at line " + i);
+                throw new CommandException("Expected 3 feature values, got " 
+                			+ values.length + " at line " + i
+                		);
             }
             
             double dh = Double.parseDouble(values[0]);
@@ -175,8 +183,8 @@ public class SequenceDataset {
         return features;
     }
     
-    private static int loadTrackLength(Path lengthFile) throws IOException {
-        String content = Files.readString(lengthFile).trim();
+    private static int loadTrackLength(Path lengthFile) {
+        String content = IO.get(() -> Files.readString(lengthFile).trim());
         return Integer.parseInt(content);
     }
     
@@ -236,20 +244,12 @@ public class SequenceDataset {
     public int getMaxSequenceLength() { return (int) features.size(2); }
     public int getNumFeatures() { return (int) features.size(1); }
     
-    private static class TrackData {
-        final String trackName;
-        final String familyName;
-        final List<SegmentFeature> features;
-        final int length;
-        final double[] labels;
-        
-        TrackData(String trackName, String familyName, List<SegmentFeature> features, 
-                  int length, double[] labels) {
-            this.trackName = trackName;
-            this.familyName = familyName;
-            this.features = features;
-            this.length = length;
-            this.labels = labels;
-        }
-    }
+    private static record TrackData (
+        		String trackName, 
+        		String familyName, 
+        		List<SegmentFeature> features, 
+                int length, 
+                double[] labels
+           ) {}
+    
 }

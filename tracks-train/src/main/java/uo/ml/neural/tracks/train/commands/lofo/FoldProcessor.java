@@ -1,6 +1,5 @@
 package uo.ml.neural.tracks.train.commands.lofo;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -34,7 +33,7 @@ public class FoldProcessor {
 	public FoldResult process(
 			List<String> trainFamilies,
 			List<String> testFamilies, 
-			Path dataDir) throws IOException {
+			Path dataDir) {
 
 		// Load datasets
 		SequenceDataset trainData = SequenceDataset.load(dataDir, testFamilies);

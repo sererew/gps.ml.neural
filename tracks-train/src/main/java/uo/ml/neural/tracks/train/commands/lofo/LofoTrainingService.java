@@ -1,12 +1,12 @@
 package uo.ml.neural.tracks.train.commands.lofo;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
+import uo.ml.neural.tracks.core.exception.CommandException;
+import uo.ml.neural.tracks.core.exception.IO;
 import uo.ml.neural.tracks.train.model.FoldResult;
 
 /**
@@ -19,37 +19,28 @@ public class LofoTrainingService {
 	private final int maxEpochs;
 	private final double learningRate;
 
-	public LofoTrainingService(Path dataDir, int maxEpochs,
-			double learningRate) {
+	public LofoTrainingService(Path dataDir, int maxEpochs, double learningRate) {
 		this.dataDir = dataDir;
 		this.maxEpochs = maxEpochs;
 		this.learningRate = learningRate;
 	}
 
-	public Integer performLofoValidation() throws Exception {
+	public void performLofoTraining() {
 		printHeader();
 
-		if (!validateDataDirectory()) {
-			return 1;
-		}
+		validateDataDirectory();
 
 		List<String> allFamilies = findAllFamilies();
 		if (allFamilies.isEmpty()) {
-			System.err.println("Error: No families found in data directory");
-			return 1;
+			throw new CommandException("No families found in data directory");
 		}
 
 		printFamiliesInfo(allFamilies);
 
 		List<FoldResult> results = executeLofoFolds(allFamilies);
-		if (results == null) {
-			return 1;
-		}
-
 		new ResultsReporter().reportOverallResults(results);
 
 		System.out.println("LOFO validation completed successfully!");
-		return 0;
 	}
 
 	private void printHeader() {
@@ -61,47 +52,49 @@ public class LofoTrainingService {
 		System.out.println();
 	}
 
-	private boolean validateDataDirectory() {
+	private void validateDataDirectory() {
 		if (!Files.exists(dataDir) || !Files.isDirectory(dataDir)) {
-			System.err.println(
-					"Error: Data directory does not exist: " + dataDir);
-			return false;
+			throw new CommandException(
+				"Data directory does not exist: " + dataDir);
 		}
-		return true;
 	}
 
 	private void printFamiliesInfo(List<String> allFamilies) {
-		System.out.printf("Found %d families for LOFO validation%n",
-				allFamilies.size());
+		System.out.printf(
+				"Found %d families for LOFO validation%n",
+				allFamilies.size()
+			);
 		System.out.println("Families: " + String.join(", ", allFamilies));
 		System.out.println();
 	}
 
 	private List<FoldResult> executeLofoFolds(List<String> allFamilies) {
 		List<FoldResult> results = new ArrayList<>();
-		FoldProcessor foldProcessor = new FoldProcessor(maxEpochs,
-				learningRate);
+		FoldProcessor foldProcessor = new FoldProcessor(maxEpochs, learningRate);
 
 		for (int fold = 0; fold < allFamilies.size(); fold++) {
 			String testFamily = allFamilies.get(fold);
-			List<String> trainFamilies = createTrainFamilies(allFamilies,
-					testFamily);
+			List<String> trainFamilies = createTrainFamilies(
+					allFamilies,
+					testFamily
+				);
 
-			printFoldHeader(fold, allFamilies.size(), testFamily,
-					trainFamilies);
+			printFoldHeader(fold, allFamilies.size(), testFamily, trainFamilies);
 
 			try {
-				FoldResult result = foldProcessor.process(trainFamilies,
-						List.of(testFamily), dataDir);
+				FoldResult result = foldProcessor.process(
+						trainFamilies,		 // training families
+						List.of(testFamily), // single test family
+						dataDir
+					);
 
 				results.add(result);
 				printFoldResults(result);
 
 			} catch (Exception e) {
-				System.err.printf("Error in fold %d (family %s): %s%n",
-						fold + 1, testFamily, e.getMessage());
-				e.printStackTrace();
-				return null;
+				throw new CommandException(String.format(
+					"Error in fold %d (family %s): %s", 
+						fold + 1, testFamily, e.getMessage()), e);
 			}
 		}
 
@@ -140,16 +133,17 @@ public class LofoTrainingService {
 		System.out.println();
 	}
 
-	private List<String> findAllFamilies() throws IOException {
+	private List<String> findAllFamilies() {
 		Path featuresDir = dataDir.resolve("features");
 		if (!Files.exists(featuresDir)) {
 			return new ArrayList<>();
 		}
 
-		try (var stream = Files.list(featuresDir)) {
-			return stream.filter(Files::isDirectory)
-					.map(p -> p.getFileName().toString()).sorted()
-					.collect(Collectors.toList());
-		}
+		return IO.get(() -> Files.list(featuresDir)
+					.filter(Files::isDirectory)
+					.map(p -> p.getFileName().toString())
+					.sorted()
+					.toList()
+				);
 	}
 }

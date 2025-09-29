@@ -1,11 +1,12 @@
 package uo.ml.neural.tracks.preprocess.command;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
+import uo.ml.neural.tracks.core.exception.CommandException;
 import uo.ml.neural.tracks.core.model.SegmentFeature;
 import uo.ml.neural.tracks.core.preprocess.ZScoreScaler;
 import uo.ml.neural.tracks.preprocess.model.FilterType;
@@ -25,21 +26,14 @@ public class TracksPreprocessingService {
 		this.filter = filter;
 	}
 
-	public Integer preprocess() throws Exception {
-		System.out.println("GPS Tracks Preprocessing Tool");
-		System.out.println("=============================");
-		System.out.printf("Input directory: %s%n", inputDir);
-		System.out.printf("Output directory: %s%n", outputDir);
-		System.out.printf("Step size: %.1f meters%n", stepMeters);
-		System.out.printf("Altitude filter: %s%n", filter);
-		System.out.println();
+	public void preprocess() {
+		printHeader();
 
 		// Validate input directory
 		if (!Files.exists(inputDir) || !Files.isDirectory(inputDir)) {
-			System.err.println(
-					"Error: Input directory does not exist or is not a directory: "
+			throw new CommandException(
+					"Input directory does not exist or is not a directory: "
 							+ inputDir);
-			return 1;
 		}
 
 		// Create output directory structure
@@ -48,9 +42,8 @@ public class TracksPreprocessingService {
 		// Find all families
 		List<Path> familyDirs = findFamilyDirectories();
 		if (familyDirs.isEmpty()) {
-			System.err.println(
-					"Error: No family directories found in input directory");
-			return 1;
+			throw new CommandException(
+					"No family directories found in input directory");
 		}
 		System.out.printf("Found %d families to process%n", familyDirs.size());
 
@@ -73,13 +66,12 @@ public class TracksPreprocessingService {
 				System.out.printf(
 						"  Processed %d tracks, pattern track has %d steps%n",
 						processedFamily.trackCount,
-						processedFamily.patternSteps);
+						processedFamily.patternSteps
+					);
 				
 			} catch (Exception e) {
-				System.err.printf("Error processing family %s: %s%n",
-						familyName, e.getMessage());
-				e.printStackTrace();
-				return 1;
+				throw new CommandException(
+						"Error processing family " + familyName + ": " + e.getMessage(), e);
 			}
 		}
 
@@ -95,13 +87,26 @@ public class TracksPreprocessingService {
 		}
 
 		System.out.println("Preprocessing completed successfully!");
-		return 0;
 	}
 
-	private List<Path> findFamilyDirectories() throws Exception {
+	private void printHeader() {
+		System.out.println("GPS Tracks Preprocessing Tool");
+		System.out.println("=============================");
+		System.out.printf("Input directory: %s%n", inputDir);
+		System.out.printf("Output directory: %s%n", outputDir);
+		System.out.printf("Step size: %.1f meters%n", stepMeters);
+		System.out.printf("Altitude filter: %s%n", filter);
+		System.out.println();
+	}
+
+	private List<Path> findFamilyDirectories() {
 		try (var stream = Files.list(inputDir)) {
-			return stream.filter(Files::isDirectory)
-					.collect(Collectors.toList());
+			return stream
+					.filter(Files::isDirectory)
+					.toList();
+		} catch (IOException e) {
+			throw new CommandException(
+					"Error reading input directory: " + e.getMessage(), e);
 		}
 	}
 }
