@@ -53,7 +53,7 @@ public class LofoResultsSaver {
         StringBuilder csv = new StringBuilder();
         csv.append("fold,test_family,train_families,")
            .append("nn_mae_distance,nn_mae_elevation_pos,nn_mae_elevation_neg,nn_mae_overall,")
-           .append("baseline_mae_distance,baseline_mae_elevation_pos,baseline_mae_elevation_neg,baseline_mae_overall\n");
+           .append("baseline_mae_distance,baseline_mae_elevation_pos,baseline_mae_elevation_neg,baseline_mae_overall%n");
 
         for (int i = 0; i < foldResults.size(); i++) {
             FoldResult result = foldResults.get(i);
@@ -61,10 +61,10 @@ public class LofoResultsSaver {
             double[] baselineMAE = result.getBaselineMAE();
             
             csv.append(String.format(Locale.US,
-            		"%d,%s,\"%s\",%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+            		"%d,%s,\"%s\",%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f%n",
                     i + 1,
                     result.getTestFamily(),
-                    String.join(";", result.getTrainFamilies()),
+                    String.join("-", result.getTrainFamilies()),
                     nnMAE[0], 
                     nnMAE[1], 
                     nnMAE[2], 
@@ -83,11 +83,11 @@ public class LofoResultsSaver {
         Path reportFile = outputDir.resolve("summary_report.md");
         
         StringBuilder report = new StringBuilder();
-        report.append("# LOFO Cross-Validation Summary Report\n\n");
-        report.append("## Overview\n\n");
-        report.append(String.format("- **Total Folds**: %d\n", foldResults.size()));
-        report.append(String.format("- **Validation Method**: Leave-One-Family-Out\n"));
-        report.append("\n## Performance Summary\n\n");
+        report.append("# LOFO Cross-Validation Summary Report%n%n");
+        report.append("## Overview%n%n");
+        report.append(String.format("- **Total Folds**: %d%n", foldResults.size()));
+        report.append(String.format("- **Validation Method**: Leave-One-Family-Out%n"));
+        report.append("\n## Performance Summary%n%n");
         
         // Calculate statistics
         double[] nnMeans = calculateMeans(foldResults, true);
@@ -95,91 +95,91 @@ public class LofoResultsSaver {
         double[] baselineMeans = calculateMeans(foldResults, false);
         double[] baselineStds = calculateStds(foldResults, baselineMeans, false);
         
-        report.append("### Neural Network Performance\n\n");
-        report.append("| Metric            | Mean ± Std | Range |\n");
-        report.append("|-------------------|------------|-------|\n");
+        report.append("### Neural Network Performance%n%n");
+        report.append("| Metric            | Mean ± Std           | Range                  |%n");
+        report.append("|-------------------|----------------------|------------------------|%n");
         report.append(String.format(
-        		"| Distance MAE      | %.3f ± %.3f | [%.3f, %.3f] |\n",
+        		"| Distance MAE      | %.3f ± %.3f | [%.3f, %.3f] |%n",
                 nnMeans[0], 
                 nnStds[0], 
                 getMin(foldResults, 0, true), 
                 getMax(foldResults, 0, true)
             ));
         report.append(String.format(
-        		"| Elevation Pos MAE | %.3f ± %.3f | [%.3f, %.3f] |\n",
+        		"| Elevation Pos MAE | %.3f ± %.3f | [%.3f, %.3f] |%n",
                 nnMeans[1], 
                 nnStds[1], 
                 getMin(foldResults, 1, true), 
                 getMax(foldResults, 1, true)
             ));
         report.append(String.format(
-        		"| Elevation Neg MAE | %.3f ± %.3f | [%.3f, %.3f] |\n",
+        		"| Elevation Neg MAE | %.3f ± %.3f | [%.3f, %.3f] |%n",
                 nnMeans[2], 
                 nnStds[2], 
                 getMin(foldResults, 2, true), 
                 getMax(foldResults, 2, true)
             ));
         report.append(String.format(
-        		"| Overall MAE       | %.3f ± %.3f | [%.3f, %.3f] |\n",
+        		"| Overall MAE       | %.3f ± %.3f | [%.3f, %.3f] |%n",
                 nnMeans[3], 
                 nnStds[3], 
                 getMinOverall(foldResults, true), 
                 getMaxOverall(foldResults, true)
             ));
         
-        report.append("\n### Baseline Performance\n\n");
-        report.append("| Metric            | Mean ± Std | Range |\n");
-        report.append("|-------------------|------------|-------|\n");
+        report.append("\n### Baseline Performance%n%n");
+        report.append("| Metric            | Mean ± Std           | Range                  |%n");
+        report.append("|-------------------|----------------------|------------------------|%n");
         report.append(String.format(
-        		"| Distance MAE      | %.3f ± %.3f | [%.3f, %.3f] |\n",
+        		"| Distance MAE      | %.3f ± %.3f | [%.3f, %.3f] |%n",
                 baselineMeans[0], 
                 baselineStds[0], 
                 getMin(foldResults, 0, false), 
                 getMax(foldResults, 0, false)
             ));
         report.append(String.format(
-        		"| Elevation Pos MAE | %.3f ± %.3f | [%.3f, %.3f] |\n",
+        		"| Elevation Pos MAE | %.3f ± %.3f | [%.3f, %.3f] |%n",
                 baselineMeans[1], 
                 baselineStds[1], 
                 getMin(foldResults, 1, false), 
                 getMax(foldResults, 1, false)
             ));
         report.append(String.format(
-        		"| Elevation Neg MAE | %.3f ± %.3f | [%.3f, %.3f] |\n",
+        		"| Elevation Neg MAE | %.3f ± %.3f | [%.3f, %.3f] |%n",
                 baselineMeans[2], 
                 baselineStds[2], 
                 getMin(foldResults, 2, false), 
                 getMax(foldResults, 2, false)
             ));
         report.append(String.format(
-        		"| Overall MAE       | %.3f ± %.3f | [%.3f, %.3f] |\n",
+        		"| Overall MAE       | %.3f ± %.3f | [%.3f, %.3f] |%n",
                 baselineMeans[3], 
                 baselineStds[3], 
                 getMinOverall(foldResults, false), 
                 getMaxOverall(foldResults, false)
             ));
         
-        report.append("\n## Fold Details\n\n");
+        report.append("\n## Fold Details%n%n");
         for (int i = 0; i < foldResults.size(); i++) {
             FoldResult result = foldResults.get(i);
             report.append(String.format(
-            		"### Fold %d: %s\n\n", 
+            		"### Fold %d: %s%n%n", 
             		i + 1, 
             		result.getTestFamily()
             	));
             report.append(String.format(
-            		"- **Training Families**: %s\n", 
+            		"- **Training Families**: %s%n", 
             		String.join(", ", result.getTrainFamilies())
             	));
             report.append(String.format(
-            		"- **NN MAE**: [%.3f, %.3f, %.3f] (overall: %.3f)\n",
+            		"- **NN MAE**: [%.3f, %.3f, %.3f] (overall: %.3f)%n",
                     result.getNnMAE()[0], 
                     result.getNnMAE()[1], 
                     result.getNnMAE()[2], 
                     result.getNnOverallMAE()
                 ));
             report.append(String.format(
-            		"- **Baseline MAE**: [%.3f, %.3f, %.3f] (overall: %.3f)\n\n",
+            		"- **Baseline MAE**: [%.3f, %.3f, %.3f] (overall: %.3f)%n%n",
                     result.getBaselineMAE()[0], 
                     result.getBaselineMAE()[1], 
                     result.getBaselineMAE()[2], 

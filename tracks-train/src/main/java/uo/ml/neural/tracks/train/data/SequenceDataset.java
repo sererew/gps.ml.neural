@@ -46,8 +46,7 @@ public class SequenceDataset {
     /**
      * Loads dataset from preprocessed directory structure.
      * 
-     * @param processedDir Directory containing features/, labels/, lengths/, 
-     * 		and mu_sigma.json
+     * @param processedDir Directory containing features/, labels/ and mu_sigma.json
      * @return Loaded and normalized dataset
      * @throws IOException if data cannot be loaded
      */
@@ -58,7 +57,7 @@ public class SequenceDataset {
     /**
      * Loads dataset from preprocessed directory structure, excluding specified families.
      * 
-     * @param processedDir Directory containing features/, labels/, lengths/, and mu_sigma.json
+     * @param processedDir Directory containing features/, labels/ and mu_sigma.json
      * @param families Families to load for LOFO
      * @return Loaded and normalized dataset
      * @throws IOException if data cannot be loaded
@@ -66,11 +65,11 @@ public class SequenceDataset {
     public static SequenceDataset load(Path processedDir, List<String> families) {
         Path featuresDir = processedDir.resolve("features");
         Path labelsDir = processedDir.resolve("labels");
-        Path lengthsDir = processedDir.resolve("lengths");
         Path scalerPath = processedDir.resolve("mu_sigma.json");
         
-        if (!Files.exists(featuresDir) || !Files.exists(labelsDir) || 
-            !Files.exists(lengthsDir) || !Files.exists(scalerPath)) {
+        if (!Files.exists(featuresDir) 
+        		|| !Files.exists(labelsDir) 
+        		|| !Files.exists(scalerPath)) {
             throw new CommandException("Missing required directories "
             		+ "or files in: " + processedDir);
         }
@@ -88,9 +87,14 @@ public class SequenceDataset {
         }
         
         // Filter out excluded families
-        List<String> familiesToProcess = allFamilies.stream()
-            .filter(family -> families.contains(family))
-            .toList();
+        List<String> familiesToProcess;
+        if (families == null || families.isEmpty()) {
+			familiesToProcess = allFamilies;
+		} else {
+			familiesToProcess = allFamilies.stream()
+	            .filter(family -> families.contains(family))
+	            .toList();
+		}
         if (familiesToProcess.isEmpty()) {
             throw new CommandException("No families to process after exclusions");
         }
@@ -105,18 +109,13 @@ public class SequenceDataset {
             
             // Load tracks for this family
             Path familyFeaturesDir = featuresDir.resolve(family);
-            Path familyLengthsDir = lengthsDir.resolve(family);
-            
             List<Path> csvFiles = IO.get(() -> Files.list(familyFeaturesDir))
             		.filter(p -> p.getFileName().toString().endsWith(".csv"))
             		.toList();
             
             for (Path csvFile : csvFiles) {
                 String trackName = getBaseName(csvFile);
-                Path lengthFile = familyLengthsDir.resolve(trackName + ".txt");
-                
                 List<SegmentFeature> rawFeatures = loadTrackFeatures(csvFile);
-                int length = loadTrackLength(lengthFile);
                 
                 // Apply normalization
                 List<SegmentFeature> normalizedFeatures = rawFeatures.stream()
@@ -127,7 +126,6 @@ public class SequenceDataset {
                 		new TrackData(family + "/" + trackName, 
                 				family, 
                                 normalizedFeatures, 
-                                length, 
                                 labels
                              )
                 	);
@@ -183,11 +181,6 @@ public class SequenceDataset {
         return features;
     }
     
-    private static int loadTrackLength(Path lengthFile) {
-        String content = IO.get(() -> Files.readString(lengthFile).trim());
-        return Integer.parseInt(content);
-    }
-    
     private static SequenceDataset convertToArrays(List<TrackData> tracks) {
         int batchSize = tracks.size();
         int maxLength = tracks.stream().mapToInt(t -> t.features.size()).max().orElse(1);
@@ -200,7 +193,6 @@ public class SequenceDataset {
         
         List<String> trackNames = new ArrayList<>();
         List<String> familyNames = new ArrayList<>();
-        
         for (int i = 0; i < batchSize; i++) {
             TrackData track = tracks.get(i);
             
@@ -248,7 +240,6 @@ public class SequenceDataset {
         		String trackName, 
         		String familyName, 
         		List<SegmentFeature> features, 
-                int length, 
                 double[] labels
            ) {}
     

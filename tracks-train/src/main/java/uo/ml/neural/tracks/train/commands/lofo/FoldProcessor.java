@@ -48,7 +48,7 @@ public class FoldProcessor {
 		MultiLayerNetwork model = trainModel(trainData);
 
 		// Evaluate neural network and capture predictions
-		EvaluationResult nnResult = evaluateNeuralNetworkWithPredictions(model, testData);
+		EvaluationResult nnResult = evaluateModelWithTestData(model, testData);
 		double[] nnMAE = nnResult.mae;
 		double nnOverallMAE = computeOverallMAE(nnMAE);
 
@@ -86,16 +86,21 @@ public class FoldProcessor {
 
 		// Training loop
 		System.out.print("Training progress: ");
-		for (int epoch = 0; epoch < maxEpochs; epoch++) {
+		long startTime = System.currentTimeMillis();
+		for (int epoch = 0; epoch < 1/*maxEpochs*/; epoch++) {
 			model.fit(trainingSet);
-			System.out.print(".");	// Progress indicator
+			System.out.printf("%.1f min%n",
+					(System.currentTimeMillis() - startTime) / 1000 / 60.0
+				);	// Progress indicator
+			startTime = System.currentTimeMillis();
+//			System.out.print(".");	// Progress indicator
 		}
-		System.out.println(" Done");
+		System.out.println("Training done");
 
 		return model;
 	}
 
-	private EvaluationResult evaluateNeuralNetworkWithPredictions(
+	private EvaluationResult evaluateModelWithTestData(
 			MultiLayerNetwork model,
 			SequenceDataset testData) {
 		

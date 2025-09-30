@@ -58,12 +58,14 @@ public class FamilyProcessor {
 	}
 
 	private Path findPatternFile(List<Path> gpxFiles) throws IOException {
-		return gpxFiles.stream().filter(
-				p -> p.getFileName().toString().contains("_pattern.gpx"))
+		return gpxFiles.stream()
+				.filter(p -> p.getFileName().toString().contains("_pattern.gpx"))
 				.findFirst()
 				.orElseThrow(() -> new IOException(
-						"No pattern file (*_pattern.gpx) found in family directory: "
-								+ familyDir));
+					"No pattern file (*_pattern.gpx) found in family directory: "
+							+ familyDir
+						)
+				);
 	}
 
 	private List<Path> findNoisyFiles(List<Path> gpxFiles, Path patternFile) {
@@ -80,9 +82,8 @@ public class FamilyProcessor {
 
 	private void createFamilyOutputDirectories() throws IOException {
 		Files.createDirectories(
-				outputDir.resolve("features").resolve(familyName));
-		Files.createDirectories(
-				outputDir.resolve("lengths").resolve(familyName));
+				outputDir.resolve("features").resolve(familyName)
+			);
 	}
 
 	private void saveLabels(double[] labels) throws Exception {
@@ -90,10 +91,9 @@ public class FamilyProcessor {
 		TracksIOUtils.saveLabels(labelsFile, labels);
 	}
 
-	private int savePatternTrack(Path patternFile, TrackData patternTrack)
+	private void savePatternTrack(Path patternFile, TrackData patternTrack)
 			throws Exception {
 		saveTrack(patternFile, patternTrack);
-		return 1;
 	}
 
 	private void saveTrack(Path patternFile, TrackData patternTrack)
@@ -106,13 +106,7 @@ public class FamilyProcessor {
 					.resolve(familyName)
 					.resolve(patternBaseName + ".csv");
 		
-		Path lengthFile = outputDir
-					.resolve("lengths")
-					.resolve(familyName)
-					.resolve(patternBaseName + ".txt");
-		
 		TracksIOUtils.saveFeaturesCSV(csvFile, patternTrack.features);
-		TracksIOUtils.saveLength(lengthFile, patternTrack.features.size());
 	}
 
 	private List<SegmentFeature> processNoisyTracks(List<Path> noisyFiles) 

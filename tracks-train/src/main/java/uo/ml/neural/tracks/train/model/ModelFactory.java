@@ -35,7 +35,10 @@ public class ModelFactory {
      * @return Configured MultiLayerNetwork ready for training
      */
     public static MultiLayerNetwork createLSTMModel(int nFeatures, double learningRate) {
+    	long seed = 42L;
+    	
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+        	.seed(seed)
             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
             .weightInit(WeightInit.XAVIER)
             .updater(new Adam(learningRate))
@@ -58,10 +61,45 @@ public class ModelFactory {
                 .build())
             .setInputType(InputType.recurrent(nFeatures))
             .build();
-        
+
+//                .seed(seed)
+//                .weightInit(WeightInit.XAVIER)
+//                .updater(new Adam(1e-3));
+//                // --- rendimiento/estabilidad en CPU ---
+////                .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
+////                .gradientNormalizationThreshold(1.0)
+////                .trainingWorkspaceMode(WorkspaceMode.ENABLED)
+////                .inferenceWorkspaceMode(WorkspaceMode.ENABLED);
+//
+//        MultiLayerConfiguration conf = base
+//        	.list()
+//        	.layer(new LSTM.Builder()
+//				.nIn(nFeatures)
+//				.nOut(128)
+//				.activation(Activation.TANH)
+//				.build())
+//       		.layer(new DenseLayer.Builder()
+//				.nOut(64)
+//				.activation(Activation.RELU)
+//				.dropOut(new Dropout(0.1))  // light regularization
+//				.build())
+////     		.layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MEAN_ABSOLUTE_ERROR)
+////		    	.nOut(3)
+//// 		    	.activation(Activation.IDENTITY)
+//// 		    	.build())
+//           .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MEAN_ABSOLUTE_ERROR)
+//				.nOut(3)
+//				.activation(Activation.IDENTITY)
+//				.build())
+//           .setInputType(InputType.recurrent(nFeatures))
+//           // --- clave para secuencias largas en CPU ---
+////           .backpropType(BackpropType.TruncatedBPTT)
+////           .tBPTTForwardLength(512)    // check with 512; 256 if 
+////           .tBPTTBackwardLength(512)
+//           .build();
+
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
-        
         return model;
     }
     

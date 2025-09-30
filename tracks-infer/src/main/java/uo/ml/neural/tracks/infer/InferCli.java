@@ -1,12 +1,22 @@
 package uo.ml.neural.tracks.infer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -15,17 +25,11 @@ import uo.ml.neural.tracks.core.io.GpxUtils;
 import uo.ml.neural.tracks.core.model.GpxPoint;
 import uo.ml.neural.tracks.core.model.SegmentFeature;
 import uo.ml.neural.tracks.core.model.UtmPoint;
-import uo.ml.neural.tracks.core.preprocess.*;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.Callable;
+import uo.ml.neural.tracks.core.preprocess.FeatureExtractor;
+import uo.ml.neural.tracks.core.preprocess.Filters;
+import uo.ml.neural.tracks.core.preprocess.Padding;
+import uo.ml.neural.tracks.core.preprocess.Resampler3D;
+import uo.ml.neural.tracks.core.preprocess.ZScoreScaler;
 
 /**
  * CLI tool for GPS track inference using trained neural network models.

@@ -28,7 +28,7 @@ public class LofoTrainerCli implements Callable<Integer> {
 	private Path dataDir;
 
     @Option(names = {"--output"}, 
-    		defaultValue = "./lofo_model", 
+			required = true, 
     		description = "Output directory for training results"
     )
     private Path outputDir;
@@ -51,7 +51,7 @@ public class LofoTrainerCli implements Callable<Integer> {
 	}
 
 	@Override
-	public Integer call() throws Exception {
+	public Integer call() {
 		try {
 			
 			new LofoTrainingService(
@@ -66,11 +66,12 @@ public class LofoTrainerCli implements Callable<Integer> {
 
 		} catch (CommandException e) {
             System.err.println("ERROR: " + e.getMessage());
-            return 1;
             
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             System.err.println("Unexpected error: " + e.getMessage());
-            return 1;
+            e.printStackTrace();
         }
+
+		return 1;
 	}
 }

@@ -4,6 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import uo.ml.neural.tracks.core.exception.CommandException;
 import uo.ml.neural.tracks.core.exception.IO;
@@ -81,7 +82,7 @@ public class LofoTrainingService {
 		List<FoldResult> results = new ArrayList<>();
 		FoldProcessor foldProcessor = new FoldProcessor(maxEpochs, learningRate);
 
-		for (int fold = 0; fold < allFamilies.size(); fold++) {
+		for (int fold = 0; fold < 2/*allFamilies.size()*/; fold++) {
 			String testFamily = allFamilies.get(fold);
 			List<String> trainFamilies = createTrainFamilies(
 					allFamilies,
@@ -90,21 +91,14 @@ public class LofoTrainingService {
 
 			printFoldHeader(fold, allFamilies.size(), testFamily, trainFamilies);
 
-			try {
-				FoldResult result = foldProcessor.process(
-						trainFamilies,		 // training families
-						List.of(testFamily), // single test family
-						dataDir
-					);
+			FoldResult result = foldProcessor.process(
+					trainFamilies,		 // training families
+					List.of(testFamily), // single test family
+					dataDir
+				);
 
-				results.add(result);
-				printFoldResults(result);
-
-			} catch (Exception e) {
-				throw new CommandException(String.format(
-					"Error in fold %d (family %s): %s", 
-						fold + 1, testFamily, e.getMessage()), e);
-			}
+			results.add(result);
+			printFoldResults(result);
 		}
 
 		return results;
@@ -133,10 +127,11 @@ public class LofoTrainingService {
 		double[] nnMAE = result.getNnMAE();
 		double[] baselineMAE = result.getBaselineMAE();
 
-		System.out.printf(
+		System.out.printf(Locale.US,
 				"Neural Network MAE: [%.3f, %.3f, %.3f] (overall: %.3f)%n",
 				nnMAE[0], nnMAE[1], nnMAE[2], result.getNnOverallMAE());
-		System.out.printf("Baseline MAE: [%.3f, %.3f, %.3f] (overall: %.3f)%n",
+		System.out.printf(Locale.US,
+				"Baseline MAE: [%.3f, %.3f, %.3f] (overall: %.3f)%n",
 				baselineMAE[0], baselineMAE[1], baselineMAE[2],
 				result.getBaselineOverallMAE());
 		System.out.println();

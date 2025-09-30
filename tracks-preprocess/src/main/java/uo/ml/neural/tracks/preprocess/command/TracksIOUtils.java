@@ -50,7 +50,6 @@ public class TracksIOUtils {
 			Files.createDirectories(outputDir);
 			Files.createDirectories(outputDir.resolve("features"));
 			Files.createDirectories(outputDir.resolve("labels"));
-			Files.createDirectories(outputDir.resolve("lengths"));
 		} catch (IOException e) {
 			throw new CommandException(
 					"Failed to create output directories: " + e.getMessage(), e);
