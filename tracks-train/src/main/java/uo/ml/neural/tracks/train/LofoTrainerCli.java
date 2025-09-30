@@ -27,7 +27,13 @@ public class LofoTrainerCli implements Callable<Integer> {
 	)
 	private Path dataDir;
 
-	@Option(names = {"--epochs" }, 
+    @Option(names = {"--output"}, 
+    		defaultValue = "./lofo_model", 
+    		description = "Output directory for training results"
+    )
+    private Path outputDir;
+
+    @Option(names = {"--epochs" }, 
 			defaultValue = "100", 
 			description = "Maximum number of training epochs (default: ${DEFAULT-VALUE})"
 	)
@@ -50,6 +56,7 @@ public class LofoTrainerCli implements Callable<Integer> {
 			
 			new LofoTrainingService(
 						dataDir, 
+						outputDir,
 						maxEpochs, 
 						learningRate
 					)

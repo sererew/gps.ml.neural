@@ -1,7 +1,9 @@
-package uo.ml.neural.tracks.eval;
+package uo.ml.neural.tracks.eval.command;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
+
+import uo.ml.neural.tracks.eval.model.LofoResult;
 
 import java.io.FileWriter;
 import java.io.IOException;

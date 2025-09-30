@@ -80,12 +80,9 @@ public class FinalTrainingService {
 		for (int epoch = 0; epoch < epochs; epoch++) {
             model.fit(trainingSet);
             
-            // Print progress dots
-            if (epoch % (epochs / 20) == 0) {
-                System.out.print(".");
-            }
+            System.out.print("."); // Print progress dot
             
-            // Print detailed progress every 10%
+            // Print detailed progress every 10
             if (epoch % (epochs / 10) == 0) {
                 double score = model.score();
                 System.out.printf(" [Epoch %d/%d, Loss: %.6f] ", epoch, epochs, score);
@@ -97,7 +94,7 @@ public class FinalTrainingService {
 		Path sourceMuSigma = dataDir.resolve("mu_sigma.json");
         Path destMuSigma = outputDir.resolve("mu_sigma.json");
         
-        IO.shallow(() -> Files.copy(
+        IO.exec(() -> Files.copy(
         		sourceMuSigma, 
         		destMuSigma, 
         		StandardCopyOption.REPLACE_EXISTING
@@ -107,7 +104,7 @@ public class FinalTrainingService {
 
 	private void saveModel(MultiLayerNetwork model) {
 		Path modelPath = outputDir.resolve("model.zip");
-        IO.shallow(() -> ModelSerializer.writeModel(model, modelPath.toFile(), true));
+        IO.exec(() -> ModelSerializer.writeModel(model, modelPath.toFile(), true));
         System.out.printf("Model saved to: %s%n", modelPath);
 	}
 
@@ -140,7 +137,7 @@ public class FinalTrainingService {
             throw new CommandException("Data directory does not exist or is not a directory: " + dataDir);
         }
         if (!Files.exists(outputDir)) {
-            IO.shallow(() -> Files.createDirectories(outputDir));
+            IO.exec(() -> Files.createDirectories(outputDir));
         }
     }
 

@@ -1,8 +1,8 @@
 package uo.ml.neural.tracks.train.eval;
 
-import uo.ml.neural.tracks.core.model.SegmentFeature;
-
 import java.util.List;
+
+import uo.ml.neural.tracks.core.model.SegmentFeature;
 
 /**
  * Baseline evaluator that computes simple geometric statistics from GPS tracks.
@@ -53,7 +53,8 @@ public class Baseline {
      */
     public static double[] computeMAE(double[] prediction, double[] trueLabels) {
         if (prediction.length != 3 || trueLabels.length != 3) {
-            throw new IllegalArgumentException("Both prediction and labels must have 3 components");
+            throw new IllegalArgumentException("Both prediction and labels "
+            		+ "must have 3 components");
         }
         
         double[] mae = new double[3];

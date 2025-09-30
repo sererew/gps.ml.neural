@@ -1,6 +1,9 @@
-package uo.ml.neural.tracks.eval;
+package uo.ml.neural.tracks.eval.command;
 
 import java.util.List;
+
+import uo.ml.neural.tracks.eval.model.BaselineResult;
+import uo.ml.neural.tracks.eval.model.LofoResult;
 
 /**
  * Container for all evaluation results including LOFO and baseline comparisons.

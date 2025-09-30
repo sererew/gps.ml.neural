@@ -7,6 +7,9 @@ import java.util.concurrent.Callable;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+import uo.ml.neural.tracks.eval.command.EvaluationResults;
+import uo.ml.neural.tracks.eval.command.ReportGenerator;
+import uo.ml.neural.tracks.eval.command.ResultAnalyzer;
 
 /**
  * CLI tool for evaluating LOFO and baseline results.

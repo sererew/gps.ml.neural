@@ -1,15 +1,20 @@
-package uo.ml.neural.tracks.eval;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+package uo.ml.neural.tracks.eval.command;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import uo.ml.neural.tracks.eval.model.BaselineResult;
+import uo.ml.neural.tracks.eval.model.LofoResult;
 
 /**
  * Analyzes LOFO validation and baseline results from various sources.
@@ -40,7 +45,7 @@ public class ResultAnalyzer {
         // Look for different types of result files
         if (Files.isDirectory(resultsDir)) {
             try (var stream = Files.list(resultsDir)) {
-                List<Path> files = stream.collect(Collectors.toList());
+                List<Path> files = stream.toList();
                 
                 for (Path file : files) {
                     if (file.getFileName().toString().toLowerCase().contains("lofo")) {

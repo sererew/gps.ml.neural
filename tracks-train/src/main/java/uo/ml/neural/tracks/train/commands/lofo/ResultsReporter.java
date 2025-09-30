@@ -5,92 +5,102 @@ import java.util.List;
 import uo.ml.neural.tracks.train.model.FoldResult;
 
 /**
- * Handles the generation of statistical reports from LOFO validation results.
+ * Handles console reporting of LOFO cross-validation results.
  */
 public class ResultsReporter {
-    
+
     /**
-     * Reports overall results from all folds with means and standard deviations.
+     * Reports overall LOFO cross-validation results to console.
      */
-    public void reportOverallResults(List<FoldResult> results) {
-        System.out.println("=== OVERALL RESULTS ===");
-        
-        // Compute means and standard deviations
-        double[] nnMeans = new double[4]; // 3 components + overall
-        double[] nnStds = new double[4];
-        double[] baselineMeans = new double[4];
-        double[] baselineStds = new double[4];
-        
-        computeMeans(results, nnMeans, baselineMeans);
-        computeStandardDeviations(results, nnMeans, baselineMeans, nnStds, baselineStds);
-        
-        printStatistics(nnMeans, nnStds, baselineMeans, baselineStds);
-        printIndividualResults(results);
+    public void reportOverallResults(List<FoldResult> foldResults) {
+        if (foldResults.isEmpty()) {
+            System.out.println("No fold results to report.");
+            return;
+        }
+
+        System.out.println("\n" + "=".repeat(60));
+        System.out.println("LOFO CROSS-VALIDATION SUMMARY");
+        System.out.println("=".repeat(60));
+
+        // Calculate overall statistics
+        double[] nnMeans = calculateMeans(foldResults, true);
+        double[] nnStds = calculateStds(foldResults, nnMeans, true);
+        double[] baselineMeans = calculateMeans(foldResults, false);
+        double[] baselineStds = calculateStds(foldResults, baselineMeans, false);
+
+        System.out.printf("Total folds: %d%n%n", foldResults.size());
+
+        // Neural Network Results
+        System.out.println("NEURAL NETWORK PERFORMANCE:");
+        System.out.println("-".repeat(40));
+        System.out.printf("Distance MAE:     %.3f ± %.3f%n", nnMeans[0], nnStds[0]);
+        System.out.printf("Elevation+ MAE:   %.3f ± %.3f%n", nnMeans[1], nnStds[1]);
+        System.out.printf("Elevation- MAE:   %.3f ± %.3f%n", nnMeans[2], nnStds[2]);
+        System.out.printf("Overall MAE:      %.3f ± %.3f%n%n", nnMeans[3], nnStds[3]);
+
+        // Baseline Results
+        System.out.println("BASELINE PERFORMANCE:");
+        System.out.println("-".repeat(40));
+        System.out.printf("Distance MAE:     %.3f ± %.3f%n", baselineMeans[0], baselineStds[0]);
+        System.out.printf("Elevation+ MAE:   %.3f ± %.3f%n", baselineMeans[1], baselineStds[1]);
+        System.out.printf("Elevation- MAE:   %.3f ± %.3f%n", baselineMeans[2], baselineStds[2]);
+        System.out.printf("Overall MAE:      %.3f ± %.3f%n%n", baselineMeans[3], baselineStds[3]);
+
+        // Improvement analysis
+        double overallImprovement = ((baselineMeans[3] - nnMeans[3]) / baselineMeans[3]) * 100;
+        System.out.printf("Overall improvement: %.1f%%%n", overallImprovement);
+        System.out.println("=".repeat(60));
     }
-    
-    private void computeMeans(List<FoldResult> results, double[] nnMeans, double[] baselineMeans) {
+
+    private double[] calculateMeans(List<FoldResult> results, boolean isNeuralNetwork) {
+        double[] sums = new double[4]; // 3 MAE values + overall
+        
         for (FoldResult result : results) {
-            double[] nnMAE = result.getNnMAE();
-            double[] baselineMAE = result.getBaselineMAE();
+            double[] mae = isNeuralNetwork 
+            		? result.getNnMAE() 
+            		: result.getBaselineMAE();
+            double overall = isNeuralNetwork 
+            		? result.getNnOverallMAE() 
+            		: result.getBaselineOverallMAE();
             
             for (int i = 0; i < 3; i++) {
-                nnMeans[i] += nnMAE[i];
-                baselineMeans[i] += baselineMAE[i];
+                sums[i] += mae[i];
             }
-            nnMeans[3] += result.getNnOverallMAE();
-            baselineMeans[3] += result.getBaselineOverallMAE();
+            sums[3] += overall;
         }
         
         for (int i = 0; i < 4; i++) {
-            nnMeans[i] /= results.size();
-            baselineMeans[i] /= results.size();
+            sums[i] /= results.size();
         }
+        
+        return sums;
     }
-    
-    private void computeStandardDeviations(List<FoldResult> results, double[] nnMeans, 
-                                         double[] baselineMeans, double[] nnStds, double[] baselineStds) {
+
+    private double[] calculateStds(
+    		List<FoldResult> results, 
+    		double[] means, 
+    		boolean isNeuralNetwork) {
+    	
+        double[] variances = new double[4];
+        
         for (FoldResult result : results) {
-            double[] nnMAE = result.getNnMAE();
-            double[] baselineMAE = result.getBaselineMAE();
+            double[] mae = isNeuralNetwork 
+            		? result.getNnMAE() 
+            		: result.getBaselineMAE();
+            double overall = isNeuralNetwork 
+            		? result.getNnOverallMAE() 
+            		: result.getBaselineOverallMAE();
             
             for (int i = 0; i < 3; i++) {
-                nnStds[i] += Math.pow(nnMAE[i] - nnMeans[i], 2);
-                baselineStds[i] += Math.pow(baselineMAE[i] - baselineMeans[i], 2);
+                variances[i] += Math.pow(mae[i] - means[i], 2);
             }
-            nnStds[3] += Math.pow(result.getNnOverallMAE() - nnMeans[3], 2);
-            baselineStds[3] += Math.pow(result.getBaselineOverallMAE() - baselineMeans[3], 2);
+            variances[3] += Math.pow(overall - means[3], 2);
         }
         
         for (int i = 0; i < 4; i++) {
-            nnStds[i] = Math.sqrt(nnStds[i] / results.size());
-            baselineStds[i] = Math.sqrt(baselineStds[i] / results.size());
+            variances[i] = Math.sqrt(variances[i] / results.size());
         }
-    }
-    
-    private void printStatistics(double[] nnMeans, double[] nnStds, 
-                               double[] baselineMeans, double[] baselineStds) {
-        System.out.printf("Neural Network MAE (mean ± std):%n");
-        System.out.printf("  Distance:  %.3f ± %.3f%n", nnMeans[0], nnStds[0]);
-        System.out.printf("  Elev (+):  %.3f ± %.3f%n", nnMeans[1], nnStds[1]);
-        System.out.printf("  Elev (-):  %.3f ± %.3f%n", nnMeans[2], nnStds[2]);
-        System.out.printf("  Overall:   %.3f ± %.3f%n", nnMeans[3], nnStds[3]);
-        System.out.println();
         
-        System.out.printf("Baseline MAE (mean ± std):%n");
-        System.out.printf("  Distance:  %.3f ± %.3f%n", baselineMeans[0], baselineStds[0]);
-        System.out.printf("  Elev (+):  %.3f ± %.3f%n", baselineMeans[1], baselineStds[1]);
-        System.out.printf("  Elev (-):  %.3f ± %.3f%n", baselineMeans[2], baselineStds[2]);
-        System.out.printf("  Overall:   %.3f ± %.3f%n", baselineMeans[3], baselineStds[3]);
-        System.out.println();
-    }
-    
-    private void printIndividualResults(List<FoldResult> results) {
-        System.out.println("Results by family:");
-        System.out.println("Family\t\tNeural Network\t\tBaseline");
-        System.out.println("------\t\t--------------\t\t--------");
-        for (FoldResult result : results) {
-            System.out.printf("%-12s\t%.3f\t\t\t%.3f%n", 
-                result.getTestFamily(), result.getNnOverallMAE(), result.getBaselineOverallMAE());
-        }
+        return variances;
     }
 }

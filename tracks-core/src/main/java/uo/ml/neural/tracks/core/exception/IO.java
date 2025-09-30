@@ -20,9 +20,9 @@ public final class IO {
 		T get() throws IOException;
 	}
 
-	public static <T> void shallow(IOShallow<T> s) {
+	public static <T> void exec(IOShallow<T> s) {
 		try {
-			s.run();
+			s.exec();
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
@@ -30,6 +30,6 @@ public final class IO {
 
 	@FunctionalInterface
 	public interface IOShallow<T> {
-		void run() throws IOException;
+		void exec() throws IOException;
 	}
 }

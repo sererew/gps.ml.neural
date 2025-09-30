@@ -16,11 +16,16 @@ import uo.ml.neural.tracks.train.model.FoldResult;
 public class LofoTrainingService {
 
 	private final Path dataDir;
+	private final Path outputDir;
 	private final int maxEpochs;
 	private final double learningRate;
 
-	public LofoTrainingService(Path dataDir, int maxEpochs, double learningRate) {
+	public LofoTrainingService(
+			Path dataDir, Path outputDir, 
+			int maxEpochs, double learningRate) {
+		
 		this.dataDir = dataDir;
+		this.outputDir = outputDir;
 		this.maxEpochs = maxEpochs;
 		this.learningRate = learningRate;
 	}
@@ -40,6 +45,9 @@ public class LofoTrainingService {
 		List<FoldResult> results = executeLofoFolds(allFamilies);
 		new ResultsReporter().reportOverallResults(results);
 
+		// Save results to output directory
+		new LofoResultsSaver(outputDir).saveResults(results);
+
 		System.out.println("LOFO validation completed successfully!");
 	}
 
@@ -47,6 +55,7 @@ public class LofoTrainingService {
 		System.out.println("Leave-One-Family-Out Cross-Validation");
 		System.out.println("=====================================");
 		System.out.printf("Data directory: %s%n", dataDir);
+		System.out.printf("Output directory: %s%n", outputDir);
 		System.out.printf("Max epochs: %d%n", maxEpochs);
 		System.out.printf("Learning rate: %.4f%n", learningRate);
 		System.out.println();

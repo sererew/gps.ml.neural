@@ -29,7 +29,7 @@ final-train.bat --data ./data/preprocessed --out ./trained_model \
 Performs Leave-One-Family-Out cross-validation for model evaluation.
 
 **Parameters:**
-- `--data <dir>`: Preprocessed data directory (output from tracks-preprocess) (required)
+- `--input <dir>`: Preprocessed data directory (output from tracks-preprocess) (required)
 - `--output <dir>`: Output directory for LOFO results (default: ./lofo_results)
 - `--epochs <num>`: Number of training epochs per fold (default: 100)
 - `--lr <rate>`: Learning rate (default: 0.001)
@@ -38,8 +38,8 @@ Performs Leave-One-Family-Out cross-validation for model evaluation.
 Trains a final model on all available families for deployment.
 
 **Parameters:**
-- `--data <dir>`: Preprocessed data directory (output from tracks-preprocess) (required)
-- `--out <dir>`: Output directory for trained model (required)
+- `--input <dir>`: Preprocessed data directory (output from tracks-preprocess) (required)
+- `--output <dir>`: Output directory for trained model (required)
 - `--epochs <num>`: Number of training epochs (default: 150)
 - `--lr <rate>`: Learning rate (default: 0.001)
 

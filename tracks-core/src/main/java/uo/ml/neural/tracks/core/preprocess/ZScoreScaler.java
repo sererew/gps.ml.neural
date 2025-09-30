@@ -122,7 +122,7 @@ public class ZScoreScaler {
      * @param path Path to save the JSON file
      */
     public void save(Path path) {
-    	IO.shallow(() -> OBJECT_MAPPER.writeValue(path.toFile(), this));
+    	IO.exec(() -> OBJECT_MAPPER.writeValue(path.toFile(), this));
     }
     
     /**

@@ -1,4 +1,4 @@
-package uo.ml.neural.tracks.eval;
+package uo.ml.neural.tracks.eval.model;
 
 /**
  * Represents baseline results for comparison analysis.
