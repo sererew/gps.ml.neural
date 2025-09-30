@@ -59,11 +59,11 @@ public class SequenceDataset {
      * Loads dataset from preprocessed directory structure, excluding specified families.
      * 
      * @param processedDir Directory containing features/, labels/, lengths/, and mu_sigma.json
-     * @param excludeFamilies Families to exclude from loading (for LOFO), null to include all
+     * @param families Families to load for LOFO
      * @return Loaded and normalized dataset
      * @throws IOException if data cannot be loaded
      */
-    public static SequenceDataset load(Path processedDir, List<String> excludeFamilies) {
+    public static SequenceDataset load(Path processedDir, List<String> families) {
         Path featuresDir = processedDir.resolve("features");
         Path labelsDir = processedDir.resolve("labels");
         Path lengthsDir = processedDir.resolve("lengths");
@@ -71,7 +71,8 @@ public class SequenceDataset {
         
         if (!Files.exists(featuresDir) || !Files.exists(labelsDir) || 
             !Files.exists(lengthsDir) || !Files.exists(scalerPath)) {
-            throw new CommandException("Missing required directories or files in: " + processedDir);
+            throw new CommandException("Missing required directories "
+            		+ "or files in: " + processedDir);
         }
         
         // Load Z-score scaler
@@ -88,9 +89,8 @@ public class SequenceDataset {
         
         // Filter out excluded families
         List<String> familiesToProcess = allFamilies.stream()
-            .filter(family -> excludeFamilies == null || !excludeFamilies.contains(family))
+            .filter(family -> families.contains(family))
             .toList();
-        
         if (familiesToProcess.isEmpty()) {
             throw new CommandException("No families to process after exclusions");
         }
@@ -98,7 +98,6 @@ public class SequenceDataset {
         // Load all data
         List<TrackData> allTracks = new ArrayList<>();
         Map<String, double[]> familyLabels = new HashMap<>();
-        
         for (String family : familiesToProcess) {
             // Load family labels
             double[] labels = loadFamilyLabels(labelsDir.resolve(family + ".csv"));
@@ -151,7 +150,8 @@ public class SequenceDataset {
         
         String[] values = lines.get(1).split(","); // Skip header
         if (values.length != 3) {
-            throw new CommandException("Expected 3 label values, got " + values.length + " in: " + labelsFile);
+            throw new CommandException("Expected 3 label values, got " 
+            		+ values.length + " in: " + labelsFile);
         }
         
         return new double[]{
