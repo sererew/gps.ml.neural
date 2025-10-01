@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
@@ -43,19 +44,18 @@ public class ModelFactory {
             .weightInit(WeightInit.XAVIER)
             .updater(new Adam(learningRate))
             .list()
-            .layer(0, new LSTM.Builder()
-                .nIn(nFeatures)
-                .nOut(128)
-                .activation(Activation.TANH)
-                .build())
-            .layer(1, new GlobalPoolingLayer.Builder()
-                .poolingType(PoolingType.MAX)
-                .build())
-            .layer(2, new DenseLayer.Builder()
+            .layer(0, new LastTimeStep(
+                    new LSTM.Builder()	// layer 0: LSTM
+                        .nIn(nFeatures)
+                        .nOut(128)
+                        .activation(Activation.TANH)
+                        .build()
+                ))
+            .layer(1, new DenseLayer.Builder()
                 .nOut(64)
                 .activation(Activation.RELU)
                 .build())
-            .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MEAN_ABSOLUTE_ERROR)
+            .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MEAN_ABSOLUTE_ERROR)
                 .nOut(3)
                 .activation(Activation.IDENTITY)
                 .build())

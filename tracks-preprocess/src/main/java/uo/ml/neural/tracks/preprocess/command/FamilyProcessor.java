@@ -1,11 +1,12 @@
 package uo.ml.neural.tracks.preprocess.command;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import uo.ml.neural.tracks.core.exception.CommandException;
+import uo.ml.neural.tracks.core.exception.IO;
 import uo.ml.neural.tracks.core.model.SegmentFeature;
 import uo.ml.neural.tracks.preprocess.model.FilterType;
 import uo.ml.neural.tracks.preprocess.model.ProcessedFamily;
@@ -27,7 +28,7 @@ public class FamilyProcessor {
 		this.filter = filter;
 	}
 
-	public ProcessedFamily process() throws Exception {
+	public ProcessedFamily process() {
 		List<Path> gpxFiles = findGpxFiles();
 		Path patternFile = findPatternFile(gpxFiles);
 		List<Path> noisyFiles = findNoisyFiles(gpxFiles, patternFile);
@@ -49,19 +50,17 @@ public class FamilyProcessor {
 			);
 	}
 
-	private List<Path> findGpxFiles() throws IOException {
-		try (var stream = Files.list(familyDir)) {
-			return stream
-					.filter(p -> p.getFileName().toString().toLowerCase().endsWith(".gpx"))
-					.toList();
-		}
+	private List<Path> findGpxFiles() {
+		return IO.get(() -> Files.list(familyDir)) 
+				.filter(p -> p.getFileName().toString().toLowerCase().endsWith(".gpx"))
+				.toList();
 	}
 
-	private Path findPatternFile(List<Path> gpxFiles) throws IOException {
+	private Path findPatternFile(List<Path> gpxFiles) {
 		return gpxFiles.stream()
 				.filter(p -> p.getFileName().toString().contains("_pattern.gpx"))
 				.findFirst()
-				.orElseThrow(() -> new IOException(
+				.orElseThrow(() -> new CommandException(
 					"No pattern file (*_pattern.gpx) found in family directory: "
 							+ familyDir
 						)
@@ -72,7 +71,7 @@ public class FamilyProcessor {
 		return gpxFiles.stream().filter(p -> !p.equals(patternFile)).toList();
 	}
 
-	private TrackData processPatternTrack(Path patternFile) throws Exception {
+	private TrackData processPatternTrack(Path patternFile) {
 		return new TrackProcessor(
 				patternFile,
 				filter, 
@@ -80,24 +79,22 @@ public class FamilyProcessor {
 			).process();
 	}
 
-	private void createFamilyOutputDirectories() throws IOException {
-		Files.createDirectories(
+	private void createFamilyOutputDirectories() {
+		IO.exec( () ->Files.createDirectories(
 				outputDir.resolve("features").resolve(familyName)
-			);
+			));
 	}
 
-	private void saveLabels(double[] labels) throws Exception {
+	private void saveLabels(double[] labels) {
 		Path labelsFile = outputDir.resolve("labels").resolve(familyName + ".csv");
 		TracksIOUtils.saveLabels(labelsFile, labels);
 	}
 
-	private void savePatternTrack(Path patternFile, TrackData patternTrack)
-			throws Exception {
+	private void savePatternTrack(Path patternFile, TrackData patternTrack) {
 		saveTrack(patternFile, patternTrack);
 	}
 
-	private void saveTrack(Path patternFile, TrackData patternTrack)
-			throws Exception {
+	private void saveTrack(Path patternFile, TrackData patternTrack) {
 		
 		String patternBaseName = getBaseName(patternFile);
 		
@@ -109,8 +106,7 @@ public class FamilyProcessor {
 		TracksIOUtils.saveFeaturesCSV(csvFile, patternTrack.features);
 	}
 
-	private List<SegmentFeature> processNoisyTracks(List<Path> noisyFiles) 
-			throws Exception {
+	private List<SegmentFeature> processNoisyTracks(List<Path> noisyFiles) {
 		
 		List<SegmentFeature> allNoisyFeatures = new ArrayList<>();
 		for (Path noisyFile : noisyFiles) {

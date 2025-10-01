@@ -82,7 +82,7 @@ public class LofoTrainingService {
 		List<FoldResult> results = new ArrayList<>();
 		FoldProcessor foldProcessor = new FoldProcessor(maxEpochs, learningRate);
 
-		for (int fold = 0; fold < 2/*allFamilies.size()*/; fold++) {
+		for (int fold = 0; fold < allFamilies.size(); fold++) {
 			String testFamily = allFamilies.get(fold);
 			List<String> trainFamilies = createTrainFamilies(
 					allFamilies,
@@ -92,8 +92,8 @@ public class LofoTrainingService {
 			printFoldHeader(fold, allFamilies.size(), testFamily, trainFamilies);
 
 			FoldResult result = foldProcessor.process(
-					trainFamilies,		 // training families
-					List.of(testFamily), // single test family
+					trainFamilies,
+					testFamily, 
 					dataDir
 				);
 
@@ -125,15 +125,10 @@ public class LofoTrainingService {
 
 	private void printFoldResults(FoldResult result) {
 		float[] nnMAE = result.getNnMAE();
-		float[] baselineMAE = result.getBaselineMAE();
 
 		System.out.printf(Locale.US,
 				"Neural Network MAE: [%.3f, %.3f, %.3f] (overall: %.3f)%n",
 				nnMAE[0], nnMAE[1], nnMAE[2], result.getNnOverallMAE());
-		System.out.printf(Locale.US,
-				"Baseline MAE: [%.3f, %.3f, %.3f] (overall: %.3f)%n",
-				baselineMAE[0], baselineMAE[1], baselineMAE[2],
-				result.getBaselineOverallMAE());
 		System.out.println();
 	}
 

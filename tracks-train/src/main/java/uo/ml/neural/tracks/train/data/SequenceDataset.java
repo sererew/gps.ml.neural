@@ -23,25 +23,35 @@ import uo.ml.neural.tracks.core.preprocess.ZScoreScaler;
  */
 public class SequenceDataset {
     
-    private final INDArray features;
-    private final INDArray featuresMask;
-    private final INDArray labels;
+    private final INDArray dataMatrix3D;		// Shape: [batchSize, nFeatures, maxLength]
+    private final INDArray dataMask2D;			// Shape: [batchSize, maxLength]
+    private final INDArray expectedValues2D;	// Shape: [batchSize, nLabels]
     private final List<String> trackNames;
     private final List<String> familyNames;
     
     private SequenceDataset(
-    		INDArray features, 
-    		INDArray featuresMask, 
-    		INDArray labels, 
+    		INDArray data, 
+    		INDArray dataMask, 
+    		INDArray expectedValues, 
             List<String> trackNames, 
             List<String> familyNames) {
     	
-        this.features = features;
-        this.featuresMask = featuresMask;
-        this.labels = labels;
+        this.dataMatrix3D = data;
+        this.dataMask2D = dataMask;
+        this.expectedValues2D = expectedValues;
         this.trackNames = new ArrayList<>(trackNames);
         this.familyNames = new ArrayList<>(familyNames);
     }
+    
+    // Getters
+    public INDArray getDataMatrix3D() { return dataMatrix3D; }
+    public INDArray getDataMask2D() { return dataMask2D; }
+    public INDArray getExpectecValues2D() { return expectedValues2D; }
+    public int getNumTracks() { return (int) dataMatrix3D.size(0); }
+    public int getNumFeatures() { return (int) dataMatrix3D.size(1); }
+    public int getNumPointsPerTrack() { return (int) dataMatrix3D.size(2); }
+    public List<String> getTrackNames() { return trackNames; }
+    public List<String> getFamilyNames() { return familyNames; }
     
     /**
      * Loads dataset from preprocessed directory structure.
@@ -57,34 +67,28 @@ public class SequenceDataset {
     /**
      * Loads dataset from preprocessed directory structure, excluding specified families.
      * 
-     * @param processedDir Directory containing features/, labels/ and mu_sigma.json
+     * @param dataDir Directory containing features/, labels/ and mu_sigma.json
      * @param families Families to load for LOFO
      * @return Loaded and normalized dataset
      * @throws IOException if data cannot be loaded
      */
-    public static SequenceDataset load(Path processedDir, List<String> families) {
-        Path featuresDir = processedDir.resolve("features");
-        Path labelsDir = processedDir.resolve("labels");
-        Path scalerPath = processedDir.resolve("mu_sigma.json");
+    public static SequenceDataset load(Path dataDir, List<String> families) {
+        Path featuresDir = dataDir.resolve("features");
+        Path labelsDir = dataDir.resolve("labels");
+        Path scalerPath = dataDir.resolve("mu_sigma.json");
         
         if (!Files.exists(featuresDir) 
         		|| !Files.exists(labelsDir) 
         		|| !Files.exists(scalerPath)) {
             throw new CommandException("Missing required directories "
-            		+ "or files in: " + processedDir);
+            		+ "or files in: " + dataDir);
         }
         
         // Load Z-score scaler
         ZScoreScaler scaler = ZScoreScaler.load(scalerPath);
         
         // Find all families
-        List<String> allFamilies;
-        try (var stream = IO.get(() -> Files.list(featuresDir))) {
-            allFamilies = stream
-                .filter(Files::isDirectory)
-                .map(p -> p.getFileName().toString())
-                .toList();
-        }
+        List<String> allFamilies = findAllFamilies(featuresDir);
         
         // Filter out excluded families
         List<String> familiesToProcess;
@@ -139,6 +143,17 @@ public class SequenceDataset {
         // Convert to INDArrays
         return convertToArrays(allTracks);
     }
+
+	private static List<String> findAllFamilies(Path featuresDir) {
+		List<String> allFamilies;
+        try (var stream = IO.get(() -> Files.list(featuresDir))) {
+            allFamilies = stream
+                .filter(Files::isDirectory)
+                .map(p -> p.getFileName().toString())
+                .toList();
+        }
+		return allFamilies;
+	}
     
     private static float[] loadFamilyLabels(Path labelsFile) {
         List<String> lines = IO.get(() -> Files.readAllLines(labelsFile));
@@ -183,8 +198,8 @@ public class SequenceDataset {
     
     private static SequenceDataset convertToArrays(List<TrackData> tracks) {
         int batchSize = tracks.size();
-        int maxLength = tracks.stream().mapToInt(t -> t.features.size()).max().orElse(1);
         int nFeatures = 3; // dh, dz, slope
+        int maxLength = tracks.stream().mapToInt(t -> t.features.size()).max().orElse(1);
         
         // Create arrays
         INDArray features = Nd4j.zeros(batchSize, nFeatures, maxLength);
@@ -225,16 +240,6 @@ public class SequenceDataset {
         int dotIndex = fileName.lastIndexOf('.');
         return dotIndex > 0 ? fileName.substring(0, dotIndex) : fileName;
     }
-    
-    // Getters
-    public INDArray getFeatures() { return features; }
-    public INDArray getFeaturesMask() { return featuresMask; }
-    public INDArray getLabels() { return labels; }
-    public List<String> getTrackNames() { return trackNames; }
-    public List<String> getFamilyNames() { return familyNames; }
-    public int getBatchSize() { return (int) features.size(0); }
-    public int getMaxSequenceLength() { return (int) features.size(2); }
-    public int getNumFeatures() { return (int) features.size(1); }
     
     private static record TrackData (
         		String trackName, 

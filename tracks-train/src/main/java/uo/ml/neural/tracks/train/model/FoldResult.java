@@ -13,8 +13,6 @@ public class FoldResult {
     private final List<String> trainFamilies;
     private final float[] nnMAE;
     private final float nnOverallMAE;
-    private final float[] baselineMAE;
-    private final float baselineOverallMAE;
     private final MultiLayerNetwork trainedModel;
     private final Map<String, float[]> predictions;
     private final Map<String, float[]> actualLabels;
@@ -22,7 +20,6 @@ public class FoldResult {
     public FoldResult(String testFamily, 
                      List<String> trainFamilies,
                      float[] nnMAE, float nnOverallMAE, 
-                     float[] baselineMAE, float baselineOverallMAE,
                      MultiLayerNetwork trainedModel,
                      Map<String, float[]> predictions,
                      Map<String, float[]> actualLabels) {
@@ -31,8 +28,6 @@ public class FoldResult {
         this.trainFamilies = List.copyOf(trainFamilies);
         this.nnMAE = nnMAE.clone();
         this.nnOverallMAE = nnOverallMAE;
-        this.baselineMAE = baselineMAE.clone();
-        this.baselineOverallMAE = baselineOverallMAE;
         this.trainedModel = trainedModel;
         this.predictions = Map.copyOf(predictions);
         this.actualLabels = Map.copyOf(actualLabels);
@@ -48,14 +43,6 @@ public class FoldResult {
     
     public float getNnOverallMAE() {
         return nnOverallMAE;
-    }
-    
-    public float[] getBaselineMAE() {
-        return baselineMAE.clone();
-    }
-    
-    public float getBaselineOverallMAE() {
-        return baselineOverallMAE;
     }
     
     public List<String> getTrainFamilies() {

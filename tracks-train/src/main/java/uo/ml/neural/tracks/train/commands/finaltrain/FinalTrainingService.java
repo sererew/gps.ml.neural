@@ -53,9 +53,9 @@ public class FinalTrainingService {
         
         // Create training dataset
         DataSet trainingSet = new DataSet(
-        		trainData.getFeatures(), 
-        		trainData.getLabels(),
-                trainData.getFeaturesMask(), 
+        		trainData.getDataMatrix3D(), 
+        		trainData.getExpectecValues2D(),
+                trainData.getDataMask2D(), 
                 null	// No label mask needed
         	);
         
@@ -115,10 +115,10 @@ public class FinalTrainingService {
 	}
 
 	private void printDatasetInfo(SequenceDataset trainData) {
-		System.out.printf("Loaded %d training samples%n", trainData.getBatchSize());
+		System.out.printf("Loaded %d training samples%n", trainData.getNumTracks());
         System.out.printf("Features: %d, Max sequence length: %d%n%n", 
         		trainData.getNumFeatures(), 
-        		trainData.getMaxSequenceLength()
+        		trainData.getNumPointsPerTrack()
         	);
 	}
 

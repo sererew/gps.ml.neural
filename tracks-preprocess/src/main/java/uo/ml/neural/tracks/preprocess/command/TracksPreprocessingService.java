@@ -52,27 +52,23 @@ public class TracksPreprocessingService {
 		for (Path familyDir : familyDirs) {
 			String familyName = familyDir.getFileName().toString();
 			System.out.printf("Processing family: %s%n", familyName);
-			try {
-				ProcessedFamily processedFamily = 
-						new FamilyProcessor(
-							familyDir,
-							familyName, 
-							outputDir, 
-							stepMeters, 
-							filter
-						).process();
+
+			ProcessedFamily processedFamily = 
+					new FamilyProcessor(
+						familyDir,
+						familyName, 
+						outputDir, 
+						stepMeters, 
+						filter
+					).process();
+			
+			allFeatures.addAll(processedFamily.allNoisyFeatures);
+			System.out.printf(
+					"  Processed %d tracks, pattern track has %d steps%n",
+					processedFamily.trackCount,
+					processedFamily.patternSteps
+				);
 				
-				allFeatures.addAll(processedFamily.allNoisyFeatures);
-				System.out.printf(
-						"  Processed %d tracks, pattern track has %d steps%n",
-						processedFamily.trackCount,
-						processedFamily.patternSteps
-					);
-				
-			} catch (Exception e) {
-				throw new CommandException(
-						"Error processing family " + familyName + ": " + e.getMessage(), e);
-			}
 		}
 
 		// Compute and save global Z-score scaler

@@ -5,9 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import uo.ml.neural.tracks.train.data.SequenceDataset;
 import uo.ml.neural.tracks.train.model.FoldResult;
@@ -34,41 +36,46 @@ public class FoldProcessor {
 	 */
 	public FoldResult process(
 			List<String> trainFamilies,
-			List<String> testFamilies, 
+			String testFamily, 
 			Path dataDir) {
 
 		// Load datasets
 		SequenceDataset trainData = SequenceDataset.load(dataDir, trainFamilies);
-		SequenceDataset testData = SequenceDataset.load(dataDir, testFamilies);
+		SequenceDataset testData = SequenceDataset.load(dataDir, List.of(testFamily));
 
-		System.out.printf("Training samples: %d, Test samples: %d%n",
-				trainData.getBatchSize(), testData.getBatchSize());
+		printLofoInfo(trainData, testData);
 
 		// Train model
 		MultiLayerNetwork model = trainModel(trainData);
 
 		// Evaluate neural network and capture predictions
-		EvaluationResult nnResult = evaluateModel(model, testData);
-		float[] nnMAE = nnResult.mae;
-		float nnOverallMAE = computeOverallMAE(nnMAE);
-
-		// Evaluate baseline
-		float[] baselineMAE = evaluator.evaluateBaseline(testData);
-		float baselineOverallMAE = computeOverallMAE(baselineMAE);
+		EvaluationResult result = evaluateModel(model, testData);
 
 		// Extract predictions and actual labels for saving
-		Map<String, float[]> predictions = extractPredictionsMap(nnResult.predictions, testData);
-		Map<String, float[]> actualLabels = extractActualLabelsMap(testData);
+		// Map<trackName, [d, d+, d-]>
+		Map<String, float[]> predictions = extractPredictionsMap(result.predictions, testData);
+		Map<String, float[]> expectations = extractActualLabelsMap(testData);
 
 		return new FoldResult(
-				testFamilies.get(0), 
+				testFamily, 
 				trainFamilies,
-				nnMAE, nnOverallMAE,
-				baselineMAE, baselineOverallMAE,
+				result.mae(), result.overallMAE(),
 				model,  // Include trained model
 				predictions,  // Include predictions
-				actualLabels  // Include actual labels
+				expectations  // Include actual labels
 			);
+	}
+
+	private void printLofoInfo(SequenceDataset trainData,
+			SequenceDataset testData) {
+		System.out.printf("Training samples: [%d x %d x %d], Test samples: [%d x %d x %d]%n",
+				trainData.getNumTracks(),
+				trainData.getNumFeatures(),
+				trainData.getNumPointsPerTrack(),
+				testData.getNumTracks(),
+				testData.getNumFeatures(),
+				testData.getNumPointsPerTrack()
+		);
 	}
 
 	private MultiLayerNetwork trainModel(SequenceDataset trainData) {
@@ -78,26 +85,38 @@ public class FoldProcessor {
 
 		// Create training dataset
 		DataSet trainingSet = new DataSet(
-				trainData.getFeatures(),
-				trainData.getLabels(), 
-				trainData.getFeaturesMask(), 
+				trainData.getDataMatrix3D(),
+				trainData.getExpectecValues2D(), 
+				trainData.getDataMask2D(), 
 				null	// No label mask
 			);
 
+		// Divide the dataset in batches to lower memory footprint
+		int batchSize = 2;
+		List<DataSet> batches = trainingSet.batchBy(batchSize);
+		DataSetIterator iter = new ExistingDataSetIterator(batches);
+		
 		// Training loop
 		System.out.print("Training progress: ");
 		long startTime = System.currentTimeMillis();
 		for (int epoch = 0; epoch < 1/*maxEpochs*/; epoch++) {
-			model.fit(trainingSet);
-			System.out.printf("%.1f min%n",
-					(System.currentTimeMillis() - startTime) / 1000 / 60.0
-				);	// Progress indicator
-			startTime = System.currentTimeMillis();
-//			System.out.print(".");	// Progress indicator
+			model.fit( iter );
+			iter.reset();
+			
+			startTime = showProgress(startTime);
 		}
 		System.out.println("Training done");
 
 		return model;
+	}
+
+	private long showProgress(long startTime) {
+		System.out.printf("%.1f min%n",
+				(System.currentTimeMillis() - startTime) / 1000 / 60.0
+			);	// Progress indicator
+		startTime = System.currentTimeMillis();
+//			System.out.print(".");	// Progress indicator
+		return startTime;
 	}
 
 	private EvaluationResult evaluateModel(
@@ -105,21 +124,17 @@ public class FoldProcessor {
 			SequenceDataset testData) {
 		
 		DataSet testSet = new DataSet(
-					testData.getFeatures(),
-					testData.getLabels(), 
-					testData.getFeaturesMask(), 
+					testData.getDataMatrix3D(),
+					testData.getExpectecValues2D(), 
+					testData.getDataMask2D(), 
 					null	// No label mask
 				);
 		
 		// Get predictions
 		INDArray predictions = model.output(testSet.getFeatures(), false);
-		float[] mae = evaluator.computeMAE(predictions, testData.getLabels());
+		float[] mae = evaluator.computeMAE(predictions, testData.getExpectecValues2D());
 		
 		return new EvaluationResult(mae, predictions);
-	}
-
-	private float computeOverallMAE(float[] mae) {
-		return (mae[0] + mae[1] + mae[2]) / 3.0f;
 	}
 
 	private Map<String, float[]> extractPredictionsMap(INDArray predictions, SequenceDataset testData) {
@@ -142,7 +157,7 @@ public class FoldProcessor {
 
 	private Map<String, float[]> extractActualLabelsMap(SequenceDataset testData) {
 		Map<String, float[]> labelsMap = new HashMap<>();
-		INDArray labels = testData.getLabels();
+		INDArray labels = testData.getExpectecValues2D();
 		List<String> trackNames = testData.getTrackNames();
 		
 		for (int i = 0; i < labels.size(0); i++) {
@@ -160,5 +175,12 @@ public class FoldProcessor {
 	private static record EvaluationResult (
 				float[] mae,
 				INDArray predictions
-			){}
+			){
+		
+		float overallMAE() {
+			return (mae[0] + mae[1] + mae[2]) / 3.0f;
+		}
+
+
+	}
 }

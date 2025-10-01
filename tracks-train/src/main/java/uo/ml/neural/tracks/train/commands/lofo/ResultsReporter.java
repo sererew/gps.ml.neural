@@ -23,10 +23,8 @@ public class ResultsReporter {
         System.out.println("=".repeat(60));
 
         // Calculate overall statistics
-        float[] nnMeans = calculateMeans(foldResults, true);
-        float[] nnStds = calculateStds(foldResults, nnMeans, true);
-        float[] baselineMeans = calculateMeans(foldResults, false);
-        float[] baselineStds = calculateStds(foldResults, baselineMeans, false);
+        float[] nnMeans = calculateMeans(foldResults);
+        float[] nnStds = stdDevs(foldResults, nnMeans);
 
         System.out.printf("Total folds: %d%n%n", foldResults.size());
 
@@ -38,30 +36,14 @@ public class ResultsReporter {
         System.out.printf("Elevation- MAE:   %.3f ± %.3f%n", nnMeans[2], nnStds[2]);
         System.out.printf("Overall MAE:      %.3f ± %.3f%n%n", nnMeans[3], nnStds[3]);
 
-        // Baseline Results
-        System.out.println("BASELINE PERFORMANCE:");
-        System.out.println("-".repeat(40));
-        System.out.printf("Distance MAE:     %.3f ± %.3f%n", baselineMeans[0], baselineStds[0]);
-        System.out.printf("Elevation+ MAE:   %.3f ± %.3f%n", baselineMeans[1], baselineStds[1]);
-        System.out.printf("Elevation- MAE:   %.3f ± %.3f%n", baselineMeans[2], baselineStds[2]);
-        System.out.printf("Overall MAE:      %.3f ± %.3f%n%n", baselineMeans[3], baselineStds[3]);
-
-        // Improvement analysis
-        float overallImprovement = ((baselineMeans[3] - nnMeans[3]) / baselineMeans[3]) * 100;
-        System.out.printf("Overall improvement: %.1f%%%n", overallImprovement);
-        System.out.println("=".repeat(60));
     }
 
-    private float[] calculateMeans(List<FoldResult> results, boolean isNeuralNetwork) {
+    private float[] calculateMeans(List<FoldResult> results) {
         float[] sums = new float[4]; // 3 MAE values + overall
         
         for (FoldResult result : results) {
-            float[] mae = isNeuralNetwork 
-            		? result.getNnMAE() 
-            		: result.getBaselineMAE();
-            float overall = isNeuralNetwork 
-            		? result.getNnOverallMAE() 
-            		: result.getBaselineOverallMAE();
+            float[] mae = result.getNnMAE(); 
+            float overall = result.getNnOverallMAE(); 
             
             for (int i = 0; i < 3; i++) {
                 sums[i] += mae[i];
@@ -76,20 +58,13 @@ public class ResultsReporter {
         return sums;
     }
 
-    private float[] calculateStds(
-    		List<FoldResult> results, 
-    		float[] means, 
-    		boolean isNeuralNetwork) {
+    private float[] stdDevs(List<FoldResult> results, float[] means) {
     	
         float[] variances = new float[4];
         
         for (FoldResult result : results) {
-            float[] mae = isNeuralNetwork 
-            		? result.getNnMAE() 
-            		: result.getBaselineMAE();
-            float overall = isNeuralNetwork 
-            		? result.getNnOverallMAE() 
-            		: result.getBaselineOverallMAE();
+            float[] mae = result.getNnMAE(); 
+            float overall = result.getNnOverallMAE(); 
             
             for (int i = 0; i < 3; i++) {
                 variances[i] += Math.pow(mae[i] - means[i], 2);

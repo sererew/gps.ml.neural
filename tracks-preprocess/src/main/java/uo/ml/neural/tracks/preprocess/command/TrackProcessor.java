@@ -1,10 +1,10 @@
 package uo.ml.neural.tracks.preprocess.command;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import uo.ml.neural.tracks.core.exception.CommandException;
 import uo.ml.neural.tracks.core.geo.ProjectionUtils;
 import uo.ml.neural.tracks.core.io.GpxUtils;
 import uo.ml.neural.tracks.core.model.GpxPoint;
@@ -30,11 +30,11 @@ public class TrackProcessor {
         this.stepMeters = stepMeters;
     }
 
-    public TrackData process() throws IOException {
+    public TrackData process() {
         // Read GPX points
         List<GpxPoint> gpxPoints = GpxUtils.readGpx(gpxFile);
         if (gpxPoints.size() < 2) {
-            throw new IOException("Track has fewer than 2 points: " + gpxFile);
+            throw new CommandException("Track has fewer than 2 points: " + gpxFile);
         }
         
         // Convert to UTM

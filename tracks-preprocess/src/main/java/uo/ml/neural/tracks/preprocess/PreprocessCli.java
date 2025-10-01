@@ -65,11 +65,11 @@ public class PreprocessCli implements Callable<Integer> {
 			
         } catch (CommandException e) {
             System.err.println("ERROR: " + e.getMessage());
-            return 1;
             
         } catch (Exception e) {
             System.err.println("Unexpected error: " + e.getMessage());
-            return 1;
         }
+
+		return 1;
 	}
 }
