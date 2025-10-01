@@ -124,8 +124,8 @@ public class LofoTrainingService {
 	}
 
 	private void printFoldResults(FoldResult result) {
-		double[] nnMAE = result.getNnMAE();
-		double[] baselineMAE = result.getBaselineMAE();
+		float[] nnMAE = result.getNnMAE();
+		float[] baselineMAE = result.getBaselineMAE();
 
 		System.out.printf(Locale.US,
 				"Neural Network MAE: [%.3f, %.3f, %.3f] (overall: %.3f)%n",

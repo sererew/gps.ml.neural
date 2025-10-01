@@ -1,12 +1,14 @@
 package uo.ml.neural.tracks.core.preprocess;
 
-import org.junit.jupiter.api.Test;
-import uo.ml.neural.tracks.core.model.SegmentFeature;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+
+import uo.ml.neural.tracks.core.model.SegmentFeature;
 
 /**
  * Unit tests for Padding class.
@@ -16,11 +18,11 @@ class PaddingTest {
     @Test
     void testPadFeatures() {
         List<SegmentFeature> features = Arrays.asList(
-            new SegmentFeature(1.0, 2.0, 0.5),
-            new SegmentFeature(3.0, 4.0, 1.5)
+            new SegmentFeature(1.0f, 2.0f, 0.5f),
+            new SegmentFeature(3.0f, 4.0f, 1.5f)
         );
         
-        double[][] padded = Padding.padFeatures(features, 4);
+        float[][] padded = Padding.padFeatures(features, 4);
         
         // Check dimensions
         assertEquals(4, padded.length);
@@ -48,11 +50,11 @@ class PaddingTest {
     @Test
     void testPadFeaturesExactLength() {
         List<SegmentFeature> features = Arrays.asList(
-            new SegmentFeature(1.0, 2.0, 0.5),
-            new SegmentFeature(3.0, 4.0, 1.5)
+            new SegmentFeature(1.0f, 2.0f, 0.5f),
+            new SegmentFeature(3.0f, 4.0f, 1.5f)
         );
         
-        double[][] padded = Padding.padFeatures(features, 2);
+        float[][] padded = Padding.padFeatures(features, 2);
         
         assertEquals(2, padded.length);
         assertEquals(1.0, padded[0][0], 1e-6);
@@ -61,7 +63,7 @@ class PaddingTest {
     
     @Test
     void testPadFeaturesEmpty() {
-        double[][] padded = Padding.padFeatures(Arrays.asList(), 3);
+        float[][] padded = Padding.padFeatures(Arrays.asList(), 3);
         
         assertEquals(3, padded.length);
         // All should be zeros
@@ -74,7 +76,7 @@ class PaddingTest {
     
     @Test
     void testMakeMask() {
-        double[] mask = Padding.makeMask(3, 5);
+        float[] mask = Padding.makeMask(3, 5);
         
         assertEquals(5, mask.length);
         
@@ -90,7 +92,7 @@ class PaddingTest {
     
     @Test
     void testMakeMaskFullLength() {
-        double[] mask = Padding.makeMask(3, 3);
+        float[] mask = Padding.makeMask(3, 3);
         
         assertEquals(3, mask.length);
         for (int i = 0; i < 3; i++) {
@@ -100,7 +102,7 @@ class PaddingTest {
     
     @Test
     void testMakeMaskZeroLength() {
-        double[] mask = Padding.makeMask(0, 3);
+        float[] mask = Padding.makeMask(0, 3);
         
         assertEquals(3, mask.length);
         for (int i = 0; i < 3; i++) {
@@ -111,7 +113,7 @@ class PaddingTest {
     @Test
     void testPadFeaturesInvalidMaxLen() {
         List<SegmentFeature> features = Arrays.asList(
-            new SegmentFeature(1.0, 2.0, 0.5)
+            new SegmentFeature(1.0f, 2.0f, 0.5f)
         );
         
         assertThrows(IllegalArgumentException.class, () -> {
@@ -126,9 +128,9 @@ class PaddingTest {
     @Test
     void testPadFeaturesSequenceTooLong() {
         List<SegmentFeature> features = Arrays.asList(
-            new SegmentFeature(1.0, 2.0, 0.5),
-            new SegmentFeature(3.0, 4.0, 1.5),
-            new SegmentFeature(5.0, 6.0, 2.5)
+            new SegmentFeature(1.0f, 2.0f, 0.5f),
+            new SegmentFeature(3.0f, 4.0f, 1.5f),
+            new SegmentFeature(5.0f, 6.0f, 2.5f)
         );
         
         assertThrows(IllegalArgumentException.class, () -> {

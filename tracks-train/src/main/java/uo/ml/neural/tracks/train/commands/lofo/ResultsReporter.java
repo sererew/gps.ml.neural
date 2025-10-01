@@ -23,10 +23,10 @@ public class ResultsReporter {
         System.out.println("=".repeat(60));
 
         // Calculate overall statistics
-        double[] nnMeans = calculateMeans(foldResults, true);
-        double[] nnStds = calculateStds(foldResults, nnMeans, true);
-        double[] baselineMeans = calculateMeans(foldResults, false);
-        double[] baselineStds = calculateStds(foldResults, baselineMeans, false);
+        float[] nnMeans = calculateMeans(foldResults, true);
+        float[] nnStds = calculateStds(foldResults, nnMeans, true);
+        float[] baselineMeans = calculateMeans(foldResults, false);
+        float[] baselineStds = calculateStds(foldResults, baselineMeans, false);
 
         System.out.printf("Total folds: %d%n%n", foldResults.size());
 
@@ -47,19 +47,19 @@ public class ResultsReporter {
         System.out.printf("Overall MAE:      %.3f ± %.3f%n%n", baselineMeans[3], baselineStds[3]);
 
         // Improvement analysis
-        double overallImprovement = ((baselineMeans[3] - nnMeans[3]) / baselineMeans[3]) * 100;
+        float overallImprovement = ((baselineMeans[3] - nnMeans[3]) / baselineMeans[3]) * 100;
         System.out.printf("Overall improvement: %.1f%%%n", overallImprovement);
         System.out.println("=".repeat(60));
     }
 
-    private double[] calculateMeans(List<FoldResult> results, boolean isNeuralNetwork) {
-        double[] sums = new double[4]; // 3 MAE values + overall
+    private float[] calculateMeans(List<FoldResult> results, boolean isNeuralNetwork) {
+        float[] sums = new float[4]; // 3 MAE values + overall
         
         for (FoldResult result : results) {
-            double[] mae = isNeuralNetwork 
+            float[] mae = isNeuralNetwork 
             		? result.getNnMAE() 
             		: result.getBaselineMAE();
-            double overall = isNeuralNetwork 
+            float overall = isNeuralNetwork 
             		? result.getNnOverallMAE() 
             		: result.getBaselineOverallMAE();
             
@@ -76,18 +76,18 @@ public class ResultsReporter {
         return sums;
     }
 
-    private double[] calculateStds(
+    private float[] calculateStds(
     		List<FoldResult> results, 
-    		double[] means, 
+    		float[] means, 
     		boolean isNeuralNetwork) {
     	
-        double[] variances = new double[4];
+        float[] variances = new float[4];
         
         for (FoldResult result : results) {
-            double[] mae = isNeuralNetwork 
+            float[] mae = isNeuralNetwork 
             		? result.getNnMAE() 
             		: result.getBaselineMAE();
-            double overall = isNeuralNetwork 
+            float overall = isNeuralNetwork 
             		? result.getNnOverallMAE() 
             		: result.getBaselineOverallMAE();
             
@@ -98,7 +98,7 @@ public class ResultsReporter {
         }
         
         for (int i = 0; i < 4; i++) {
-            variances[i] = Math.sqrt(variances[i] / results.size());
+            variances[i] = (float) Math.sqrt(variances[i] / results.size());
         }
         
         return variances;

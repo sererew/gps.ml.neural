@@ -1,14 +1,16 @@
 package uo.ml.neural.tracks.core.model;
 
+import java.util.Objects;
+
 /**
  * Represents geometric features extracted from a track segment.
  * These features are used for machine learning analysis of GPS tracks.
  */
 public class SegmentFeature {
     
-    private final double dh; // 2D horizontal distance
-    private final double dz; // Vertical distance (elevation change)
-    private final double slope; // Slope calculated as dz/(dh+1e-6)
+    private final float dh; // 2D horizontal distance
+    private final float dz; // Vertical distance (elevation change)
+    private final float slope; // Slope calculated as dz/(dh+1e-6)
     
     /**
      * Creates a new segment feature with the specified values.
@@ -17,7 +19,7 @@ public class SegmentFeature {
      * @param dz Vertical distance (elevation change) in meters
      * @param slope Slope calculated as dz/(dh+1e-6)
      */
-    public SegmentFeature(double dh, double dz, double slope) {
+    public SegmentFeature(float dh, float dz, float slope) {
         this.dh = dh;
         this.dz = dz;
         this.slope = slope;
@@ -28,7 +30,7 @@ public class SegmentFeature {
      * 
      * @return Horizontal distance in meters
      */
-    public double getDh() {
+    public float getDh() {
         return dh;
     }
     
@@ -37,7 +39,7 @@ public class SegmentFeature {
      * 
      * @return Vertical distance in meters
      */
-    public double getDz() {
+    public float getDz() {
         return dz;
     }
     
@@ -46,7 +48,7 @@ public class SegmentFeature {
      * 
      * @return Slope calculated as dz/(dh+1e-6)
      */
-    public double getSlope() {
+    public float getSlope() {
         return slope;
     }
     
@@ -57,17 +59,22 @@ public class SegmentFeature {
     
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof SegmentFeature)) return false;
+        if (this == obj) {
+			return true;
+		}
+        if (!(obj instanceof SegmentFeature)) {
+			return false;
+		}
         
         SegmentFeature other = (SegmentFeature) obj;
-        return Double.compare(dh, other.dh) == 0 &&
-               Double.compare(dz, other.dz) == 0 &&
-               Double.compare(slope, other.slope) == 0;
+        return Float.compare(dh, other.dh) == 0 
+        		&& Float.compare(dz, other.dz) == 0 
+        		&& Float.compare(slope, other.slope) == 0;
     }
     
     @Override
     public int hashCode() {
-        return java.util.Objects.hash(dh, dz, slope);
+        return Objects.hash(dh, dz, slope);
     }
+    
 }

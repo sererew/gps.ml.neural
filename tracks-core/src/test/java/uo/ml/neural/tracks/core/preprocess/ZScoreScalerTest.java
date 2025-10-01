@@ -1,15 +1,18 @@
 package uo.ml.neural.tracks.core.preprocess;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import uo.ml.neural.tracks.core.model.SegmentFeature;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import uo.ml.neural.tracks.core.model.SegmentFeature;
 
 /**
  * Unit tests for ZScoreScaler class.
@@ -23,9 +26,9 @@ class ZScoreScalerTest {
     void testFitAndTransform() {
         // Create test features with known statistics
         List<SegmentFeature> features = Arrays.asList(
-            new SegmentFeature(1.0, 2.0, 0.5),
-            new SegmentFeature(3.0, 4.0, 1.5),
-            new SegmentFeature(5.0, 6.0, 2.5)
+            new SegmentFeature(1.0f, 2.0f, 0.5f),
+            new SegmentFeature(3.0f, 4.0f, 1.5f),
+            new SegmentFeature(5.0f, 6.0f, 2.5f)
         );
         
         // Fit scaler
@@ -43,7 +46,7 @@ class ZScoreScalerTest {
         assertEquals(Math.sqrt(2.0/3.0), scaler.getSigmaSlope(), 1e-6);
         
         // Transform a feature
-        SegmentFeature testFeature = new SegmentFeature(3.0, 4.0, 1.5);
+        SegmentFeature testFeature = new SegmentFeature(3.0f, 4.0f, 1.5f);
         SegmentFeature normalized = scaler.transform(testFeature);
         
         // Mean values should become 0
@@ -56,9 +59,9 @@ class ZScoreScalerTest {
     void testSaveAndLoad() throws IOException {
         // Create and fit a scaler
         List<SegmentFeature> features = Arrays.asList(
-            new SegmentFeature(10.0, 5.0, 0.1),
-            new SegmentFeature(20.0, 10.0, 0.2),
-            new SegmentFeature(30.0, 15.0, 0.3)
+            new SegmentFeature(10.0f, 5.0f, 0.1f),
+            new SegmentFeature(20.0f, 10.0f, 0.2f),
+            new SegmentFeature(30.0f, 15.0f, 0.3f)
         );
         
         ZScoreScaler originalScaler = ZScoreScaler.fit(features);
@@ -79,7 +82,7 @@ class ZScoreScalerTest {
         assertEquals(originalScaler.getSigmaSlope(), loadedScaler.getSigmaSlope(), 1e-6);
         
         // Verify both scalers produce same transformation
-        SegmentFeature testFeature = new SegmentFeature(25.0, 12.5, 0.25);
+        SegmentFeature testFeature = new SegmentFeature(25.0f, 12.5f, 0.25f);
         SegmentFeature normalized1 = originalScaler.transform(testFeature);
         SegmentFeature normalized2 = loadedScaler.transform(testFeature);
         
@@ -99,7 +102,7 @@ class ZScoreScalerTest {
     void testLoadNonExistentFile() {
         Path nonExistentFile = tempDir.resolve("nonexistent.json");
         
-        assertThrows(IOException.class, () -> {
+        assertThrows(UncheckedIOException.class, () -> {
             ZScoreScaler.load(nonExistentFile);
         });
     }

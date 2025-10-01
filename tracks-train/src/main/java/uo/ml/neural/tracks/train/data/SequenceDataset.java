@@ -101,10 +101,10 @@ public class SequenceDataset {
         
         // Load all data
         List<TrackData> allTracks = new ArrayList<>();
-        Map<String, double[]> familyLabels = new HashMap<>();
+        Map<String, float[]> familyLabels = new HashMap<>();
         for (String family : familiesToProcess) {
             // Load family labels
-            double[] labels = loadFamilyLabels(labelsDir.resolve(family + ".csv"));
+            float[] labels = loadFamilyLabels(labelsDir.resolve(family + ".csv"));
             familyLabels.put(family, labels);
             
             // Load tracks for this family
@@ -140,7 +140,7 @@ public class SequenceDataset {
         return convertToArrays(allTracks);
     }
     
-    private static double[] loadFamilyLabels(Path labelsFile) {
+    private static float[] loadFamilyLabels(Path labelsFile) {
         List<String> lines = IO.get(() -> Files.readAllLines(labelsFile));
         if (lines.size() < 2) {
             throw new CommandException("Invalid labels file format: " + labelsFile);
@@ -152,10 +152,10 @@ public class SequenceDataset {
             		+ values.length + " in: " + labelsFile);
         }
         
-        return new double[]{
-            Double.parseDouble(values[0]), // dist_total
-            Double.parseDouble(values[1]), // desn_pos
-            Double.parseDouble(values[2])  // desn_neg
+        return new float[]{
+            Float.parseFloat(values[0]), // dist_total
+            Float.parseFloat(values[1]), // desn_pos
+            Float.parseFloat(values[2])  // desn_neg
         };
     }
     
@@ -171,9 +171,9 @@ public class SequenceDataset {
                 		);
             }
             
-            double dh = Double.parseDouble(values[0]);
-            double dz = Double.parseDouble(values[1]);
-            double slope = Double.parseDouble(values[2]);
+            float dh = Float.parseFloat(values[0]);
+            float dz = Float.parseFloat(values[1]);
+            float slope = Float.parseFloat(values[2]);
             
             features.add(new SegmentFeature(dh, dz, slope));
         }
@@ -197,8 +197,8 @@ public class SequenceDataset {
             TrackData track = tracks.get(i);
             
             // Pad features
-            double[][] paddedFeatures = Padding.padFeatures(track.features, maxLength);
-            double[] mask = Padding.makeMask(track.features.size(), maxLength);
+            float[][] paddedFeatures = Padding.padFeatures(track.features, maxLength);
+            float[] mask = Padding.makeMask(track.features.size(), maxLength);
             
             // Fill features array [batch, nFeatures, time]
             for (int t = 0; t < maxLength; t++) {
@@ -240,7 +240,7 @@ public class SequenceDataset {
         		String trackName, 
         		String familyName, 
         		List<SegmentFeature> features, 
-                double[] labels
+                float[] labels
            ) {}
     
 }

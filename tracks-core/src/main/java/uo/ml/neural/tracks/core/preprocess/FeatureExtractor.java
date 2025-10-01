@@ -1,10 +1,10 @@
 package uo.ml.neural.tracks.core.preprocess;
 
-import uo.ml.neural.tracks.core.model.SegmentFeature;
-import uo.ml.neural.tracks.core.model.UtmPoint;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import uo.ml.neural.tracks.core.model.SegmentFeature;
+import uo.ml.neural.tracks.core.model.UtmPoint;
 
 /**
  * Extracts geometric features from UTM point sequences for machine learning analysis.
@@ -31,15 +31,15 @@ public class FeatureExtractor {
             UtmPoint curr = pts.get(i);
             
             // Calculate 2D horizontal distance
-            double de = curr.getE() - prev.getE();
-            double dn = curr.getN() - prev.getN();
-            double dh = Math.sqrt(de * de + dn * dn);
+            float de = (float)(curr.getE() - prev.getE());
+            float dn = (float)(curr.getN() - prev.getN());
+            float dh = (float) Math.sqrt(de * de + dn * dn);
             
             // Calculate vertical distance (elevation change)
-            double dz = curr.getZ() - prev.getZ();
+            float dz = (float)(curr.getZ() - prev.getZ());
             
             // Calculate slope with small epsilon to avoid division by zero
-            double slope = dz / (dh + 1e-6);
+            float slope = (float)(dz / (dh + 1e-6));
             
             features.add(new SegmentFeature(dh, dz, slope));
         }

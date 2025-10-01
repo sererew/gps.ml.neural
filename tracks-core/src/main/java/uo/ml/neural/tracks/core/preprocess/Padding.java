@@ -1,8 +1,8 @@
 package uo.ml.neural.tracks.core.preprocess;
 
-import uo.ml.neural.tracks.core.model.SegmentFeature;
-
 import java.util.List;
+
+import uo.ml.neural.tracks.core.model.SegmentFeature;
 
 /**
  * Utility class for padding feature sequences to uniform length.
@@ -19,15 +19,16 @@ public class Padding {
      * @return 2D array with shape [maxLen][3] containing [dh, dz, slope] values
      * @throws IllegalArgumentException if maxLen is not positive or sequence is longer than maxLen
      */
-    public static double[][] padFeatures(List<SegmentFeature> seq, int maxLen) {
+    public static float[][] padFeatures(List<SegmentFeature> seq, int maxLen) {
         if (maxLen <= 0) {
             throw new IllegalArgumentException("Maximum length must be positive");
         }
         if (seq.size() > maxLen) {
-            throw new IllegalArgumentException("Sequence length (" + seq.size() + ") exceeds maximum length (" + maxLen + ")");
+            throw new IllegalArgumentException("Sequence length (" + seq.size() 
+            	+ ") exceeds maximum length (" + maxLen + ")");
         }
         
-        double[][] padded = new double[maxLen][3];
+        float[][] padded = new float[maxLen][3];
         
         // Fill with actual feature values
         for (int i = 0; i < seq.size(); i++) {
@@ -50,21 +51,21 @@ public class Padding {
      * @return Mask array where 1.0 indicates real data and 0.0 indicates padding
      * @throws IllegalArgumentException if realLen > maxLen or either parameter is negative
      */
-    public static double[] makeMask(int realLen, int maxLen) {
+    public static float[] makeMask(int realLen, int maxLen) {
         if (realLen < 0 || maxLen < 0) {
             throw new IllegalArgumentException("Lengths must be non-negative");
         }
         if (realLen > maxLen) {
-            throw new IllegalArgumentException("Real length (" + realLen + ") cannot exceed maximum length (" + maxLen + ")");
+            throw new IllegalArgumentException("Real length (" + realLen 
+            		+ ") cannot exceed maximum length (" + maxLen + ")");
         }
         
-        double[] mask = new double[maxLen];
+        float[] mask = new float[maxLen];
         
         // Set 1.0 for real data positions
         for (int i = 0; i < realLen; i++) {
-            mask[i] = 1.0;
+            mask[i] = 1.0f;
         }
-        
         // Remaining positions are already 0.0 by default
         
         return mask;

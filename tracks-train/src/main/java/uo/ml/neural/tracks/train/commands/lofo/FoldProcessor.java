@@ -48,17 +48,17 @@ public class FoldProcessor {
 		MultiLayerNetwork model = trainModel(trainData);
 
 		// Evaluate neural network and capture predictions
-		EvaluationResult nnResult = evaluateModelWithTestData(model, testData);
-		double[] nnMAE = nnResult.mae;
-		double nnOverallMAE = computeOverallMAE(nnMAE);
+		EvaluationResult nnResult = evaluateModel(model, testData);
+		float[] nnMAE = nnResult.mae;
+		float nnOverallMAE = computeOverallMAE(nnMAE);
 
 		// Evaluate baseline
-		double[] baselineMAE = evaluator.evaluateBaseline(testData);
-		double baselineOverallMAE = computeOverallMAE(baselineMAE);
+		float[] baselineMAE = evaluator.evaluateBaseline(testData);
+		float baselineOverallMAE = computeOverallMAE(baselineMAE);
 
 		// Extract predictions and actual labels for saving
-		Map<String, double[]> predictions = extractPredictionsMap(nnResult.predictions, testData);
-		Map<String, double[]> actualLabels = extractActualLabelsMap(testData);
+		Map<String, float[]> predictions = extractPredictionsMap(nnResult.predictions, testData);
+		Map<String, float[]> actualLabels = extractActualLabelsMap(testData);
 
 		return new FoldResult(
 				testFamilies.get(0), 
@@ -100,7 +100,7 @@ public class FoldProcessor {
 		return model;
 	}
 
-	private EvaluationResult evaluateModelWithTestData(
+	private EvaluationResult evaluateModel(
 			MultiLayerNetwork model,
 			SequenceDataset testData) {
 		
@@ -113,26 +113,26 @@ public class FoldProcessor {
 		
 		// Get predictions
 		INDArray predictions = model.output(testSet.getFeatures(), false);
-		double[] mae = evaluator.computeMAE(predictions, testData.getLabels());
+		float[] mae = evaluator.computeMAE(predictions, testData.getLabels());
 		
 		return new EvaluationResult(mae, predictions);
 	}
 
-	private double computeOverallMAE(double[] mae) {
-		return (mae[0] + mae[1] + mae[2]) / 3.0;
+	private float computeOverallMAE(float[] mae) {
+		return (mae[0] + mae[1] + mae[2]) / 3.0f;
 	}
 
-	private Map<String, double[]> extractPredictionsMap(INDArray predictions, SequenceDataset testData) {
-		Map<String, double[]> predictionsMap = new HashMap<>();
+	private Map<String, float[]> extractPredictionsMap(INDArray predictions, SequenceDataset testData) {
+		Map<String, float[]> predictionsMap = new HashMap<>();
 		
 		// Get track names from test data
 		List<String> trackNames = testData.getTrackNames();
 		
 		for (int i = 0; i < predictions.size(0); i++) {
 			String trackName = trackNames.get(i);
-			double[] predictionArray = new double[3];
+			float[] predictionArray = new float[3];
 			for (int j = 0; j < 3; j++) {
-				predictionArray[j] = predictions.getDouble(i, j);
+				predictionArray[j] = predictions.getFloat(i, j);
 			}
 			predictionsMap.put(trackName, predictionArray);
 		}
@@ -140,16 +140,16 @@ public class FoldProcessor {
 		return predictionsMap;
 	}
 
-	private Map<String, double[]> extractActualLabelsMap(SequenceDataset testData) {
-		Map<String, double[]> labelsMap = new HashMap<>();
+	private Map<String, float[]> extractActualLabelsMap(SequenceDataset testData) {
+		Map<String, float[]> labelsMap = new HashMap<>();
 		INDArray labels = testData.getLabels();
 		List<String> trackNames = testData.getTrackNames();
 		
 		for (int i = 0; i < labels.size(0); i++) {
 			String trackName = trackNames.get(i);
-			double[] labelArray = new double[3];
+			float[] labelArray = new float[3];
 			for (int j = 0; j < 3; j++) {
-				labelArray[j] = labels.getDouble(i, j);
+				labelArray[j] = labels.getFloat(i, j);
 			}
 			labelsMap.put(trackName, labelArray);
 		}
@@ -157,13 +157,8 @@ public class FoldProcessor {
 		return labelsMap;
 	}
 
-	private static class EvaluationResult {
-		final double[] mae;
-		final INDArray predictions;
-
-		EvaluationResult(double[] mae, INDArray predictions) {
-			this.mae = mae;
-			this.predictions = predictions;
-		}
-	}
+	private static record EvaluationResult (
+				float[] mae,
+				INDArray predictions
+			){}
 }

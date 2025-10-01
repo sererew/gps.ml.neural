@@ -17,14 +17,14 @@ public class Baseline {
      * @param features List of segment features (dh, dz, slope) from a track
      * @return Array with [total_distance, positive_elevation, negative_elevation]
      */
-    public static double[] computeBaseline(List<SegmentFeature> features) {
+    public static float[] computeBaseline(List<SegmentFeature> features) {
         if (features.isEmpty()) {
-            return new double[]{0.0, 0.0, 0.0};
+            return new float[]{0.0f, 0.0f, 0.0f};
         }
         
-        double totalDistance = 0.0;
-        double positiveElevation = 0.0;
-        double negativeElevation = 0.0;
+        float totalDistance = 0.0f;
+        float positiveElevation = 0.0f;
+        float negativeElevation = 0.0f;
         
         for (SegmentFeature feature : features) {
             // Total horizontal distance: sum all dh values
@@ -41,39 +41,39 @@ public class Baseline {
             }
         }
         
-        return new double[]{totalDistance, positiveElevation, negativeElevation};
+        return new float[]{totalDistance, positiveElevation, negativeElevation};
     }
     
     /**
-     * Computes Mean Absolute Error between baseline prediction and true labels.
+     * Computes Absolute Error between baseline prediction and true labels.
      * 
      * @param prediction Baseline prediction [dist, desn_pos, desn_neg]
-     * @param trueLabels True labels [dist_total, desn_pos, desn_neg] 
+     * @param expected True labels [dist_total, desn_pos, desn_neg] 
      * @return MAE for each component [mae_dist, mae_pos, mae_neg]
      */
-    public static double[] computeMAE(double[] prediction, double[] trueLabels) {
-        if (prediction.length != 3 || trueLabels.length != 3) {
+    public static float[] absError(float[] prediction, float[] expected) {
+        if (prediction.length != 3 || expected.length != 3) {
             throw new IllegalArgumentException("Both prediction and labels "
             		+ "must have 3 components");
         }
         
-        double[] mae = new double[3];
+        float[] mae = new float[3];
         for (int i = 0; i < 3; i++) {
-            mae[i] = Math.abs(prediction[i] - trueLabels[i]);
+            mae[i] = Math.abs(prediction[i] - expected[i]);
         }
         
         return mae;
     }
     
     /**
-     * Computes overall MAE as the mean of individual component MAEs.
+     * Computes Mean Absolute Error as the mean of individual absolute errors.
      * 
      * @param prediction Baseline prediction
      * @param trueLabels True labels
      * @return Overall MAE (mean of the 3 component MAEs)
      */
-    public static double computeOverallMAE(double[] prediction, double[] trueLabels) {
-        double[] mae = computeMAE(prediction, trueLabels);
-        return (mae[0] + mae[1] + mae[2]) / 3.0;
+    public static float computeOverallMAE(float[] prediction, float[] trueLabels) {
+        float[] mae = absError(prediction, trueLabels);
+        return (mae[0] + mae[1] + mae[2]) / 3.0f;
     }
 }

@@ -57,8 +57,8 @@ public class LofoResultsSaver {
 
         for (int i = 0; i < foldResults.size(); i++) {
             FoldResult result = foldResults.get(i);
-            double[] nnMAE = result.getNnMAE();
-            double[] baselineMAE = result.getBaselineMAE();
+            float[] nnMAE = result.getNnMAE();
+            float[] baselineMAE = result.getBaselineMAE();
             
             csv.append(String.format(Locale.US,
             		"%d,%s,\"%s\",%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f%n",
@@ -90,10 +90,10 @@ public class LofoResultsSaver {
         report.append("\n## Performance Summary%n%n");
         
         // Calculate statistics
-        double[] nnMeans = calculateMeans(foldResults, true);
-        double[] nnStds = calculateStds(foldResults, nnMeans, true);
-        double[] baselineMeans = calculateMeans(foldResults, false);
-        double[] baselineStds = calculateStds(foldResults, baselineMeans, false);
+        float[] nnMeans = calculateMeans(foldResults, true);
+        float[] nnStds = calculateStds(foldResults, nnMeans, true);
+        float[] baselineMeans = calculateMeans(foldResults, false);
+        float[] baselineStds = calculateStds(foldResults, baselineMeans, false);
         
         report.append("### Neural Network Performance%n%n");
         report.append("| Metric            | Mean ± Std           | Range                  |%n");
@@ -232,12 +232,12 @@ public class LofoResultsSaver {
     }
 
     // Helper methods for statistics calculation
-    private double[] calculateMeans(List<FoldResult> results, boolean isNeuralNetwork) {
-        double[] sums = new double[4]; // 3 MAE values + overall
+    private float[] calculateMeans(List<FoldResult> results, boolean isNeuralNetwork) {
+        float[] sums = new float[4]; // 3 MAE values + overall
         
         for (FoldResult result : results) {
-            double[] mae = getMae(isNeuralNetwork, result);
-            double overall = getOverallMae(isNeuralNetwork, result);
+            float[] mae = getMae(isNeuralNetwork, result);
+            float overall = getOverallMae(isNeuralNetwork, result);
             
             for (int i = 0; i < 3; i++) {
                 sums[i] += mae[i];
@@ -252,24 +252,24 @@ public class LofoResultsSaver {
         return sums;
     }
 
-	private double getOverallMae(boolean isNeuralNetwork, FoldResult result) {
+	private float getOverallMae(boolean isNeuralNetwork, FoldResult result) {
 		return isNeuralNetwork ? result.getNnOverallMAE() : result.getBaselineOverallMAE();
 	}
 
-	private double[] getMae(boolean isNeuralNetwork, FoldResult result) {
+	private float[] getMae(boolean isNeuralNetwork, FoldResult result) {
 		return isNeuralNetwork ? result.getNnMAE() : result.getBaselineMAE();
 	}
 
-    private double[] calculateStds(
+    private float[] calculateStds(
     		List<FoldResult> results, 
-    		double[] means, 
+    		float[] means, 
     		boolean isNeuralNetwork) {
     	
-        double[] variances = new double[4];
+        float[] variances = new float[4];
         
         for (FoldResult result : results) {
-            double[] mae = getMae(isNeuralNetwork, result);
-            double overall = getOverallMae(isNeuralNetwork, result);
+            float[] mae = getMae(isNeuralNetwork, result);
+            float overall = getOverallMae(isNeuralNetwork, result);
             
             for (int i = 0; i < 3; i++) {
                 variances[i] += Math.pow(mae[i] - means[i], 2);
@@ -278,34 +278,38 @@ public class LofoResultsSaver {
         }
         
         for (int i = 0; i < 4; i++) {
-            variances[i] = Math.sqrt(variances[i] / results.size());
+            variances[i] = (float) Math.sqrt(variances[i] / results.size());
         }
         
         return variances;
     }
 
-    private double getMin(List<FoldResult> results, int index, boolean isNeuralNetwork) {
-        return results.stream()
+    private float getMin(List<FoldResult> results, int index, boolean isNeuralNetwork) {
+        return (float) results.stream()
                 .mapToDouble(r -> getMae(isNeuralNetwork, r)[index])
-                .min().orElse(0.0);
+                .min()
+                .orElse(0.0f);
     }
 
-    private double getMax(List<FoldResult> results, int index, boolean isNeuralNetwork) {
-        return results.stream()
+    private float getMax(List<FoldResult> results, int index, boolean isNeuralNetwork) {
+        return (float) results.stream()
                 .mapToDouble(r -> getMae(isNeuralNetwork, r)[index])
-                .max().orElse(0.0);
+                .max()
+                .orElse(0.0);
     }
 
-    private double getMinOverall(List<FoldResult> results, boolean isNeuralNetwork) {
-        return results.stream()
+    private float getMinOverall(List<FoldResult> results, boolean isNeuralNetwork) {
+        return (float) results.stream()
                 .mapToDouble(r -> getOverallMae(isNeuralNetwork, r))
-                .min().orElse(0.0);
+                .min()
+                .orElse(0.0);
     }
 
-    private double getMaxOverall(List<FoldResult> results, boolean isNeuralNetwork) {
-        return results.stream()
+    private float getMaxOverall(List<FoldResult> results, boolean isNeuralNetwork) {
+        return (float) results.stream()
                 .mapToDouble(r -> getOverallMae(isNeuralNetwork, r))
-                .max().orElse(0.0);
+                .max()
+                .orElse(0.0);
     }
 
     /**
@@ -314,8 +318,8 @@ public class LofoResultsSaver {
     public static record PredictionData(
     		String testFamily,
 			List<String> trainFamilies,
-			Map<String, double[]> predictions,
-			Map<String, double[]> actualLabels
+			Map<String, float[]> predictions,
+			Map<String, float[]> actualLabels
 	) {}
     
 }

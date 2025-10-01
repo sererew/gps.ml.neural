@@ -19,12 +19,12 @@ import uo.ml.neural.tracks.core.model.SegmentFeature;
  */
 public class ZScoreScaler {
     
-    private final double muDh;
-    private final double muDz;
-    private final double muSlope;
-    private final double sigmaDh;
-    private final double sigmaDz;
-    private final double sigmaSlope;
+    private final float muDh;
+    private final float muDz;
+    private final float muSlope;
+    private final float sigmaDh;
+    private final float sigmaDz;
+    private final float sigmaSlope;
     
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     
@@ -39,12 +39,12 @@ public class ZScoreScaler {
      * @param sigmaSlope Standard deviation of slope values
      */
     @JsonCreator
-    public ZScoreScaler(@JsonProperty("muDh") double muDh,
-                        @JsonProperty("muDz") double muDz,
-                        @JsonProperty("muSlope") double muSlope,
-                        @JsonProperty("sigmaDh") double sigmaDh,
-                        @JsonProperty("sigmaDz") double sigmaDz,
-                        @JsonProperty("sigmaSlope") double sigmaSlope) {
+    public ZScoreScaler(@JsonProperty("muDh") float muDh,
+                        @JsonProperty("muDz") float muDz,
+                        @JsonProperty("muSlope") float muSlope,
+                        @JsonProperty("sigmaDh") float sigmaDh,
+                        @JsonProperty("sigmaDz") float sigmaDz,
+                        @JsonProperty("sigmaSlope") float sigmaSlope) {
         this.muDh = muDh;
         this.muDz = muDz;
         this.muSlope = muSlope;
@@ -66,7 +66,9 @@ public class ZScoreScaler {
         }
         
         // Compute means
-        double sumDh = 0.0, sumDz = 0.0, sumSlope = 0.0;
+        float sumDh = 0.0f;
+        float sumDz = 0.0f;
+        float sumSlope = 0.0f;
         for (SegmentFeature feature : features) {
             sumDh += feature.getDh();
             sumDz += feature.getDz();
@@ -74,30 +76,32 @@ public class ZScoreScaler {
         }
         
         int n = features.size();
-        double muDh = sumDh / n;
-        double muDz = sumDz / n;
-        double muSlope = sumSlope / n;
+        float muDh = sumDh / n;
+        float muDz = sumDz / n;
+        float muSlope = sumSlope / n;
         
         // Compute standard deviations
-        double sumSqDh = 0.0, sumSqDz = 0.0, sumSqSlope = 0.0;
+        float sumSqDh = 0.0f;
+        float sumSqDz = 0.0f;
+        float sumSqSlope = 0.0f;
         for (SegmentFeature feature : features) {
-            double diffDh = feature.getDh() - muDh;
-            double diffDz = feature.getDz() - muDz;
-            double diffSlope = feature.getSlope() - muSlope;
+            float diffDh = feature.getDh() - muDh;
+            float diffDz = feature.getDz() - muDz;
+            float diffSlope = feature.getSlope() - muSlope;
             
             sumSqDh += diffDh * diffDh;
             sumSqDz += diffDz * diffDz;
             sumSqSlope += diffSlope * diffSlope;
         }
         
-        double sigmaDh = Math.sqrt(sumSqDh / n);
-        double sigmaDz = Math.sqrt(sumSqDz / n);
-        double sigmaSlope = Math.sqrt(sumSqSlope / n);
+        float sigmaDh = (float) Math.sqrt(sumSqDh / n);
+        float sigmaDz = (float) Math.sqrt(sumSqDz / n);
+        float sigmaSlope = (float) Math.sqrt(sumSqSlope / n);
         
         // Avoid division by zero
-        sigmaDh = Math.max(sigmaDh, 1e-8);
-        sigmaDz = Math.max(sigmaDz, 1e-8);
-        sigmaSlope = Math.max(sigmaSlope, 1e-8);
+        sigmaDh = (float) Math.max(sigmaDh, 1e-8);
+        sigmaDz = (float) Math.max(sigmaDz, 1e-8);
+        sigmaSlope = (float) Math.max(sigmaSlope, 1e-8);
         
         return new ZScoreScaler(muDh, muDz, muSlope, sigmaDh, sigmaDz, sigmaSlope);
     }
@@ -109,9 +113,9 @@ public class ZScoreScaler {
      * @return Normalized segment feature
      */
     public SegmentFeature transform(SegmentFeature feature) {
-        double normalizedDh = (feature.getDh() - muDh) / sigmaDh;
-        double normalizedDz = (feature.getDz() - muDz) / sigmaDz;
-        double normalizedSlope = (feature.getSlope() - muSlope) / sigmaSlope;
+        float normalizedDh = (feature.getDh() - muDh) / sigmaDh;
+        float normalizedDz = (feature.getDz() - muDz) / sigmaDz;
+        float normalizedSlope = (feature.getSlope() - muSlope) / sigmaSlope;
         
         return new SegmentFeature(normalizedDh, normalizedDz, normalizedSlope);
     }
@@ -138,20 +142,20 @@ public class ZScoreScaler {
     
     // Getters for JSON serialization
     @JsonProperty("muDh")
-    public double getMuDh() { return muDh; }
+    public float getMuDh() { return muDh; }
     
     @JsonProperty("muDz")
-    public double getMuDz() { return muDz; }
+    public float getMuDz() { return muDz; }
     
     @JsonProperty("muSlope")
-    public double getMuSlope() { return muSlope; }
+    public float getMuSlope() { return muSlope; }
     
     @JsonProperty("sigmaDh")
-    public double getSigmaDh() { return sigmaDh; }
+    public float getSigmaDh() { return sigmaDh; }
     
     @JsonProperty("sigmaDz")
-    public double getSigmaDz() { return sigmaDz; }
+    public float getSigmaDz() { return sigmaDz; }
     
     @JsonProperty("sigmaSlope")
-    public double getSigmaSlope() { return sigmaSlope; }
+    public float getSigmaSlope() { return sigmaSlope; }
 }

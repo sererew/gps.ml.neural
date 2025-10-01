@@ -11,21 +11,21 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 public class FoldResult {
     private final String testFamily;
     private final List<String> trainFamilies;
-    private final double[] nnMAE;
-    private final double nnOverallMAE;
-    private final double[] baselineMAE;
-    private final double baselineOverallMAE;
+    private final float[] nnMAE;
+    private final float nnOverallMAE;
+    private final float[] baselineMAE;
+    private final float baselineOverallMAE;
     private final MultiLayerNetwork trainedModel;
-    private final Map<String, double[]> predictions;
-    private final Map<String, double[]> actualLabels;
+    private final Map<String, float[]> predictions;
+    private final Map<String, float[]> actualLabels;
     
     public FoldResult(String testFamily, 
                      List<String> trainFamilies,
-                     double[] nnMAE, double nnOverallMAE, 
-                     double[] baselineMAE, double baselineOverallMAE,
+                     float[] nnMAE, float nnOverallMAE, 
+                     float[] baselineMAE, float baselineOverallMAE,
                      MultiLayerNetwork trainedModel,
-                     Map<String, double[]> predictions,
-                     Map<String, double[]> actualLabels) {
+                     Map<String, float[]> predictions,
+                     Map<String, float[]> actualLabels) {
         
         this.testFamily = testFamily;
         this.trainFamilies = List.copyOf(trainFamilies);
@@ -42,19 +42,19 @@ public class FoldResult {
         return testFamily;
     }
     
-    public double[] getNnMAE() {
+    public float[] getNnMAE() {
         return nnMAE.clone();
     }
     
-    public double getNnOverallMAE() {
+    public float getNnOverallMAE() {
         return nnOverallMAE;
     }
     
-    public double[] getBaselineMAE() {
+    public float[] getBaselineMAE() {
         return baselineMAE.clone();
     }
     
-    public double getBaselineOverallMAE() {
+    public float getBaselineOverallMAE() {
         return baselineOverallMAE;
     }
     
@@ -66,11 +66,11 @@ public class FoldResult {
         return trainedModel;
     }
     
-    public Map<String, double[]> getPredictions() {
+    public Map<String, float[]> getPredictions() {
         return predictions;
     }
     
-    public Map<String, double[]> getActualLabels() {
+    public Map<String, float[]> getActualLabels() {
         return actualLabels;
     }
 }

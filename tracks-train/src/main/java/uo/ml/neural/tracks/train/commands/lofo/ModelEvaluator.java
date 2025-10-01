@@ -17,14 +17,14 @@ public class ModelEvaluator {
     /**
      * Computes Mean Absolute Error between predictions and labels.
      */
-    public double[] computeMAE(INDArray predictions, INDArray labels) {
+    public float[] computeMAE(INDArray predictions, INDArray labels) {
         int batchSize = (int) predictions.size(0);
-        double[] totalMAE = new double[3];
+        float[] totalMAE = new float[3];
         
         for (int i = 0; i < batchSize; i++) {
             for (int j = 0; j < 3; j++) {
-                double pred = predictions.getDouble(i, j);
-                double label = labels.getDouble(i, j);
+                float pred = predictions.getFloat(i, j);
+                float label = labels.getFloat(i, j);
                 totalMAE[j] += Math.abs(pred - label);
             }
         }
@@ -40,28 +40,29 @@ public class ModelEvaluator {
     /**
      * Evaluates baseline model on test dataset.
      */
-    public double[] evaluateBaseline(SequenceDataset testData) {
+    public float[] evaluateBaseline(SequenceDataset testData) {
         int batchSize = testData.getBatchSize();
-        double[] totalMAE = new double[3];
+        float[] totalMAE = new float[3];
         
         for (int i = 0; i < batchSize; i++) {
             // Extract features for this sample
-            List<SegmentFeature> features = extractFeaturesFromArray(testData.getFeatures(), i);
+            List<SegmentFeature> features = toFeaturesList(testData.getFeatures(), i);
             
             // Compute baseline prediction
-            double[] baseline = Baseline.computeBaseline(features);
+            float[] expected = Baseline.computeBaseline(features);
             
-            // Get true labels
-            double[] expectedValues = new double[]{
-                testData.getLabels().getDouble(i, 0),
-                testData.getLabels().getDouble(i, 1), 
-                testData.getLabels().getDouble(i, 2)
+            // Get true labels, the inferred values by the model
+            INDArray labels = testData.getLabels();
+			float[] prediction = new float[]{
+                labels.getFloat(i, 0),
+                labels.getFloat(i, 1), 
+                labels.getFloat(i, 2)
             };
             
-            // Compute MAE for this sample
-            double[] sampleMAE = Baseline.computeMAE(baseline, expectedValues);
+            // Compute Absolute Error for this sample
+            float[] sampleAE = Baseline.absError(prediction, expected);
             for (int j = 0; j < 3; j++) {
-                totalMAE[j] += sampleMAE[j];
+                totalMAE[j] += sampleAE[j];
             }
         }
         
@@ -73,14 +74,14 @@ public class ModelEvaluator {
         return totalMAE;
     }
     
-    private List<SegmentFeature> extractFeaturesFromArray(INDArray features, int sampleIndex) {
+    private List<SegmentFeature> toFeaturesList(INDArray features, int sampleIndex) {
         List<SegmentFeature> result = new ArrayList<>();
         int maxLength = (int) features.size(2);
         
         for (int t = 0; t < maxLength; t++) {
-            double dh = features.getDouble(sampleIndex, 0, t);
-            double dz = features.getDouble(sampleIndex, 1, t);
-            double slope = features.getDouble(sampleIndex, 2, t);
+            float dh = features.getFloat(sampleIndex, 0, t);
+            float dz = features.getFloat(sampleIndex, 1, t);
+            float slope = features.getFloat(sampleIndex, 2, t);
             
             // Stop at padding (assuming zero-padding)
             if (dh == 0.0 && dz == 0.0 && slope == 0.0) {
