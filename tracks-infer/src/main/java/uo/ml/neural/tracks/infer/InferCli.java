@@ -208,8 +208,8 @@ public class InferCli implements Callable<Integer> {
             .toList();
         
         // Pad features and create mask
-        double[][] paddedFeatures = Padding.padFeatures(normalizedFeatures, maxLength);
-        double[] mask = Padding.makeMask(normalizedFeatures.size(), maxLength);
+        float[][] paddedFeatures = Padding.padFeatures(normalizedFeatures, maxLength);
+        float[] mask = Padding.makeMask(normalizedFeatures.size(), maxLength);
         
         // Create INDArrays [1, nFeatures, time]
         INDArray features = Nd4j.zeros(1, 3, maxLength);

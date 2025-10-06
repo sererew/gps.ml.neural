@@ -18,7 +18,7 @@
     <description>Training module with LOFO and baseline functionality</description>
 
     <properties>
-        <main.class>uo.ml.neural.tracks.train.FinalTrainCli</main.class>
+        <main.class>uo.ml.neural.tracks.train.LofoTrainerCli</main.class>
     </properties>
 
     <dependencies>
@@ -32,12 +32,18 @@
             <artifactId>deeplearning4j-core</artifactId>
             <version>${dl4j.version}</version>	
         </dependency>
+		<dependency>
+		    <groupId>org.deeplearning4j</groupId>
+		    <artifactId>deeplearning4j-ui</artifactId>
+		    <version>${dl4j.version}</version>
+		</dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native-platform</artifactId>
-<!--
             <artifactId>nd4j-cuda-11.6-platform</artifactId>
- -->
+<!--
+            <artifactId>nd4j-native-platform</artifactId>
+            <artifactId>nd4j-cuda-11.6-platform</artifactId>
+-->
             <version>${dl4j.version}</version>
         </dependency>
         <dependency>
@@ -51,5 +57,14 @@
             <version>${slf4j.version}</version>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

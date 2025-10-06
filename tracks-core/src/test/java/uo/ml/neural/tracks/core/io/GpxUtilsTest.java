@@ -1,15 +1,18 @@
 package uo.ml.neural.tracks.core.io;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import uo.ml.neural.tracks.core.model.GpxPoint;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import uo.ml.neural.tracks.core.model.GpxPoint;
 
 /**
  * Unit tests for GpxUtils class.
@@ -71,7 +74,7 @@ class GpxUtilsTest {
     void testReadGpxNonExistentFile() {
         Path nonExistentFile = tempDir.resolve("nonexistent.gpx");
         
-        assertThrows(IOException.class, () -> {
+        assertThrows(UncheckedIOException.class, () -> {
             GpxUtils.readGpx(nonExistentFile);
         });
     }

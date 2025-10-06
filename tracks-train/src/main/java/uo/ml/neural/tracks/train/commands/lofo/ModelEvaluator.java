@@ -7,10 +7,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class ModelEvaluator {
     
-    /**
+	/**
      * Computes Mean Absolute Error between predictions and expectations.
      */
-    public float[] computeMAE(INDArray predictions, INDArray expected) {
+    public MaeResult computeMAE(INDArray predictions, INDArray expected) {
     	// predictions shape: [batchSize, 3]
     	// labels shape: [batchSize, 3]
         int batchSize = (int) predictions.size(0);
@@ -29,7 +29,15 @@ public class ModelEvaluator {
             totalMAE[j] /= batchSize;
         }
         
-        return totalMAE;
+        return new MaeResult(totalMAE);
     }
     
+    public record MaeResult(
+    		float[] mae
+    	){
+    	public float overallMAE() {
+			return (mae[0] + mae[1] + mae[2]) / 3.0f;
+		}
+	}
+
 }
