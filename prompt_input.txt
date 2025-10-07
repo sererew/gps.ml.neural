@@ -1,0 +1,53 @@
+siguiente paso: ahora se va a entrenar una red neuronal cuya:
+	- entrada será [batch, features, time]
+		Donde:
+		- batch: serán fragmentos de las grabaciones que tenemos de longitud 3600 puntos (1 hora) (en tracks más cortos se paddea con ceros)
+		- features: serán d(x), d(y), d(z) (delta) obtenidos de las diferencas en cada eje del punto p con respecto a p-1
+		- time: cada uno de los puntos de las grabaciones resampleadas
+		
+	 - salida será [batch, features, time]
+		Donde:
+		- features será la predicción que haga la red
+		- batch y time lo mismo que a la entrada
+		
+	- labels será [batch, features, time]
+		Donde:
+		- batch fragmentos del tracks patrón que corresponda a la grabación alineado
+		- features los mismo para calculado sobre el fragmento del track patrón
+		- time el mismo (base de tiempos común a entrada, salida y labels)
+		
+	Es decir, se prentende que la red aprenda a detectar ruido y compensarlo devolviendo puntos corregidos. Sobre el track corregido se espera calcular distancia total, desnivel acumulado positivo y desnivel acumulado negativo.
+	
+	Cosas a tener en cuenta:
+		- Aunque la base de tiempos es común a las grabaciones y el patrón hay ciertas discordancias al inicio y fin de cada grabación con respecto al patrón que hay que corregir. Por ejemplo, la grabación A empieza 3 segundos antes que el patrón y termina 4 antes. Las ventanas de muestreo para esa grabación deben empezar en el primer instante en el que coincidan grabación y patrón y terminar cuando termine que que antes acabe.
+		- Las ventanas (fragmentos) de grabación serán, en principio de 1 hora, 3600 puntos. En fragmentos más cortos se padea con ceros. Lo que obliga a generar una máscara para cada ventana.
+		- En grabaciones y patrones de más de una hora las ventanas estarán solapadas a la media hora (1800 puntos).
+		- Añadir normalización (batch o layer norm) si los valores de delta varían mucho entre recorridos.
+		- Sincronización de fragmentos: habrá que escanear al inicio todas las grabaciones de la pasada junto con el patrón para determinar el punto de referencia de inicio a todos los fragmentos.
+	
+	Sobre la red:
+		- LSTM (128) -> densa(64) -> output(3)
+		- return_sequences=True en la LSTM, para producir salida por timestep.
+		- Función de pérdida sobre cada dx, dy, dz (vectorial)
+		- Funciones de activación densa(64) -> relu, output(3) lineal
+
+Usar máscara de padding para que la pérdida ignore los ceros.
+	
+	Preguntas:
+	- ¿Cómo ves el planteamiento
+	- ¿Relación cantidad de datos/parámetros?
+	- Se necesita generar un script python que leyendo de las carpetas data/preprocessed/<pasada> genere en data/input:
+		- /labels
+		- /slices
+		- /masks
+		Donde:
+			- /labels 
+				- contendrá un fichero CSV para cada fragmento de track patrón con columnas: dx, dy, dz, time (time para debugging, quizá no para input)
+				- los ficheros se denominarán <pattern_name>_<n> donde <n> es el número de ventana consecutiva. Los fragmentos solapados serán <n"a">
+			- /slices
+				- contendrá un fichero CSV con cada fragmento de la grabacion que corresponda. Igual contenido que el anterior pero sacado de la grabación.
+				- los ficheros se denominarán <grabación>_<n> con las mismas consideraciones que la anterior
+			- /masks
+				- contendrá un fichero de máscara para cada fragmento
+				
+	Antes de nada responde a la primera pregunta para refinar la idea.
