@@ -1,1828 +1,378 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gpx xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd" version="1.1" creator="gpx.py -- https://github.com/tkrajina/gpxpy">
-  <wpt lat="43.329235" lon="-4.877929">
-    <ele>353.1</ele>
-    <name>8: 21.4%</name>
-    <desc>Pendiente 21.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.329252" lon="-4.877889">
-    <ele>354.0</ele>
-    <name>9: 24.0%</name>
-    <desc>Pendiente 24.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.329292" lon="-4.877893">
-    <ele>355.0</ele>
-    <name>10: 22.4%</name>
-    <desc>Pendiente 22.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.331815" lon="-4.876392">
-    <ele>387.0</ele>
-    <name>42: 21.1%</name>
-    <desc>Pendiente 21.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.332102" lon="-4.875854">
-    <ele>393.4</ele>
-    <name>46: 24.5%</name>
-    <desc>Pendiente 24.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.331966" lon="-4.875445">
-    <ele>399.2</ele>
-    <name>50: 21.2%</name>
-    <desc>Pendiente 21.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.331968" lon="-4.875405">
-    <ele>400.0</ele>
-    <name>51: 24.7%</name>
-    <desc>Pendiente 24.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.331988" lon="-4.875388">
-    <ele>400.9</ele>
-    <name>52: 34.4%</name>
-    <desc>Pendiente 34.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.332178" lon="-4.875387">
-    <ele>406.2</ele>
-    <name>53: 25.1%</name>
-    <desc>Pendiente 25.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.332211" lon="-4.875379">
-    <ele>407.0</ele>
-    <name>54: 21.5%</name>
-    <desc>Pendiente 21.5% (umbral 20%)</desc>
-  </wpt>
   <wpt lat="43.332229" lon="-4.875356">
     <ele>408.0</ele>
-    <name>55: 36.6%</name>
-    <desc>Pendiente 36.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.33243" lon="-4.872919">
-    <ele>435.2</ele>
-    <name>65: 22.3%</name>
-    <desc>Pendiente 22.3% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.332482" lon="-4.872857">
-    <ele>437.0</ele>
-    <name>66: 23.5%</name>
-    <desc>Pendiente 23.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.334455" lon="-4.873424">
-    <ele>468.9</ele>
-    <name>78: 22.3%</name>
-    <desc>Pendiente 22.3% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.334595" lon="-4.873275">
-    <ele>471.5</ele>
-    <name>80: 22.3%</name>
-    <desc>Pendiente 22.3% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.334652" lon="-4.873233">
-    <ele>473.0</ele>
-    <name>81: 20.9%</name>
-    <desc>Pendiente 20.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.335012" lon="-4.873094">
-    <ele>480.3</ele>
-    <name>87: 21.6%</name>
-    <desc>Pendiente 21.6% (umbral 20%)</desc>
+    <name>Tramo 55: 36.6%</name>
+    <desc>Pendiente 36.6% en ventana de 6.5m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.335054" lon="-4.873134">
     <ele>482.7</ele>
-    <name>88: 42.2%</name>
-    <desc>Pendiente 42.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.335172" lon="-4.873455">
-    <ele>488.7</ele>
-    <name>90: 28.1%</name>
-    <desc>Pendiente 28.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.335202" lon="-4.873492">
-    <ele>490.0</ele>
-    <name>91: 29.0%</name>
-    <desc>Pendiente 29.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.33552" lon="-4.873612">
-    <ele>497.0</ele>
-    <name>94: 21.1%</name>
-    <desc>Pendiente 21.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.335693" lon="-4.873744">
-    <ele>501.9</ele>
-    <name>95: 22.3%</name>
-    <desc>Pendiente 22.3% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.336218" lon="-4.87433">
-    <ele>515.5</ele>
-    <name>100: 22.3%</name>
-    <desc>Pendiente 22.3% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.336493" lon="-4.8746">
-    <ele>519.1</ele>
-    <name>105: 21.5%</name>
-    <desc>Pendiente 21.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.336572" lon="-4.874682">
-    <ele>519.0</ele>
-    <name>107: -20.5%</name>
-    <desc>Pendiente -20.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.336986" lon="-4.875633">
-    <ele>531.4</ele>
-    <name>114: 27.0%</name>
-    <desc>Pendiente 27.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.337052" lon="-4.875634">
-    <ele>533.1</ele>
-    <name>115: 23.2%</name>
-    <desc>Pendiente 23.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.337985" lon="-4.877587">
-    <ele>563.7</ele>
-    <name>127: 24.1%</name>
-    <desc>Pendiente 24.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.338083" lon="-4.877766">
-    <ele>568.0</ele>
-    <name>129: 24.2%</name>
-    <desc>Pendiente 24.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.33825" lon="-4.878016">
-    <ele>573.0</ele>
-    <name>131: 20.3%</name>
-    <desc>Pendiente 20.3% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.338365" lon="-4.878457">
-    <ele>580.6</ele>
-    <name>134: 21.6%</name>
-    <desc>Pendiente 21.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.338394" lon="-4.878526">
-    <ele>582.3</ele>
-    <name>135: 26.4%</name>
-    <desc>Pendiente 26.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.33851" lon="-4.878811">
-    <ele>587.9</ele>
-    <name>138: 30.4%</name>
-    <desc>Pendiente 30.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.339298" lon="-4.878961">
-    <ele>606.0</ele>
-    <name>150: 23.6%</name>
-    <desc>Pendiente 23.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.339336" lon="-4.878928">
-    <ele>607.2</ele>
-    <name>151: 24.0%</name>
-    <desc>Pendiente 24.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.339385" lon="-4.87897">
-    <ele>608.7</ele>
-    <name>152: 23.4%</name>
-    <desc>Pendiente 23.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.339573" lon="-4.879225">
-    <ele>614.4</ele>
-    <name>155: 23.2%</name>
-    <desc>Pendiente 23.2% (umbral 20%)</desc>
+    <name>Tramo 88: 42.2%</name>
+    <desc>Pendiente 42.2% en ventana de 5.7m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.339647" lon="-4.879391">
     <ele>618.6</ele>
-    <name>157: 39.9%</name>
-    <desc>Pendiente 39.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.339657" lon="-4.879513">
-    <ele>620.6</ele>
-    <name>158: 20.1%</name>
-    <desc>Pendiente 20.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.33967" lon="-4.879646">
-    <ele>624.3</ele>
-    <name>159: 34.1%</name>
-    <desc>Pendiente 34.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.340771" lon="-4.879929">
-    <ele>622.9</ele>
-    <name>170: -27.6%</name>
-    <desc>Pendiente -27.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.340857" lon="-4.879892">
-    <ele>620.3</ele>
-    <name>171: -25.9%</name>
-    <desc>Pendiente -25.9% (umbral 20%)</desc>
+    <name>Tramo 157: 39.9%</name>
+    <desc>Pendiente 39.9% en ventana de 8.5m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.340936" lon="-4.879861">
     <ele>627.1</ele>
-    <name>172: 74.4%</name>
-    <desc>Pendiente 74.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.341164" lon="-4.879627">
-    <ele>629.4</ele>
-    <name>175: 23.6%</name>
-    <desc>Pendiente 23.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.341514" lon="-4.879409">
-    <ele>633.0</ele>
-    <name>181: 34.9%</name>
-    <desc>Pendiente 34.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.34279" lon="-4.879796">
-    <ele>647.2</ele>
-    <name>202: 27.7%</name>
-    <desc>Pendiente 27.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342732" lon="-4.879698">
-    <ele>649.8</ele>
-    <name>204: 35.0%</name>
-    <desc>Pendiente 35.0% (umbral 20%)</desc>
+    <name>Tramo 172: 74.4%</name>
+    <desc>Pendiente 74.4% en ventana de 9.1m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.342697" lon="-4.879658">
     <ele>651.7</ele>
-    <name>205: 37.5%</name>
-    <desc>Pendiente 37.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342671" lon="-4.879601">
-    <ele>652.9</ele>
-    <name>206: 22.1%</name>
-    <desc>Pendiente 22.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342499" lon="-4.879258">
-    <ele>658.1</ele>
-    <name>210: 20.9%</name>
-    <desc>Pendiente 20.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342432" lon="-4.87912">
-    <ele>662.3</ele>
-    <name>211: 31.3%</name>
-    <desc>Pendiente 31.3% (umbral 20%)</desc>
+    <name>Tramo 205: 37.5%</name>
+    <desc>Pendiente 37.5% en ventana de 5.1m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.342407" lon="-4.879062">
     <ele>664.3</ele>
-    <name>212: 36.7%</name>
-    <desc>Pendiente 36.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342384" lon="-4.879013">
-    <ele>665.9</ele>
-    <name>213: 33.9%</name>
-    <desc>Pendiente 33.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.34236" lon="-4.878937">
-    <ele>668.1</ele>
-    <name>214: 32.8%</name>
-    <desc>Pendiente 32.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342335" lon="-4.878886">
-    <ele>669.6</ele>
-    <name>215: 30.2%</name>
-    <desc>Pendiente 30.2% (umbral 20%)</desc>
+    <name>Tramo 212: 36.7%</name>
+    <desc>Pendiente 36.7% en ventana de 5.5m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.342309" lon="-4.878831">
     <ele>671.9</ele>
-    <name>216: 43.4%</name>
-    <desc>Pendiente 43.4% (umbral 20%)</desc>
+    <name>Tramo 216: 43.4%</name>
+    <desc>Pendiente 43.4% en ventana de 5.3m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.342276" lon="-4.878785">
     <ele>673.9</ele>
-    <name>217: 38.3%</name>
-    <desc>Pendiente 38.3% (umbral 20%)</desc>
+    <name>Tramo 217: 38.3%</name>
+    <desc>Pendiente 38.3% en ventana de 5.2m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.342245" lon="-4.878745">
     <ele>676.0</ele>
-    <name>218: 44.4%</name>
-    <desc>Pendiente 44.4% (umbral 20%)</desc>
+    <name>Tramo 218: 44.4%</name>
+    <desc>Pendiente 44.4% en ventana de 4.7m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.342237" lon="-4.878682">
     <ele>677.9</ele>
-    <name>219: 36.7%</name>
-    <desc>Pendiente 36.7% (umbral 20%)</desc>
+    <name>Tramo 219: 36.7%</name>
+    <desc>Pendiente 36.7% en ventana de 5.2m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.342223" lon="-4.878659">
     <ele>678.8</ele>
-    <name>220: 37.1%</name>
-    <desc>Pendiente 37.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342193" lon="-4.878601">
-    <ele>680.7</ele>
-    <name>221: 33.0%</name>
-    <desc>Pendiente 33.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342169" lon="-4.878569">
-    <ele>682.0</ele>
-    <name>222: 35.0%</name>
-    <desc>Pendiente 35.0% (umbral 20%)</desc>
+    <name>Tramo 220: 37.1%</name>
+    <desc>Pendiente 37.1% en ventana de 2.4m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.342128" lon="-4.878504">
     <ele>684.9</ele>
-    <name>223: 41.7%</name>
-    <desc>Pendiente 41.7% (umbral 20%)</desc>
+    <name>Tramo 223: 41.7%</name>
+    <desc>Pendiente 41.7% en ventana de 7.0m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.34208" lon="-4.878431">
     <ele>687.9</ele>
-    <name>224: 37.7%</name>
-    <desc>Pendiente 37.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342065" lon="-4.878358">
-    <ele>690.0</ele>
-    <name>225: 34.2%</name>
-    <desc>Pendiente 34.2% (umbral 20%)</desc>
+    <name>Tramo 224: 37.7%</name>
+    <desc>Pendiente 37.7% en ventana de 8.0m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.342009" lon="-4.878316">
     <ele>693.1</ele>
-    <name>226: 43.7%</name>
-    <desc>Pendiente 43.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.341978" lon="-4.878298">
-    <ele>694.1</ele>
-    <name>227: 26.7%</name>
-    <desc>Pendiente 26.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.341321" lon="-4.878147">
-    <ele>702.6</ele>
-    <name>235: 33.5%</name>
-    <desc>Pendiente 33.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.341236" lon="-4.878123">
-    <ele>705.3</ele>
-    <name>236: 28.0%</name>
-    <desc>Pendiente 28.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.341185" lon="-4.878128">
-    <ele>707.0</ele>
-    <name>237: 29.9%</name>
-    <desc>Pendiente 29.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.341099" lon="-4.877974">
-    <ele>704.9</ele>
-    <name>240: -22.4%</name>
-    <desc>Pendiente -22.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.341037" lon="-4.877869">
-    <ele>702.7</ele>
-    <name>242: -20.7%</name>
-    <desc>Pendiente -20.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.341021" lon="-4.877834">
-    <ele>702.0</ele>
-    <name>243: -20.9%</name>
-    <desc>Pendiente -20.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.340995" lon="-4.877741">
-    <ele>700.0</ele>
-    <name>244: -24.8%</name>
-    <desc>Pendiente -24.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.341015" lon="-4.876431">
-    <ele>693.1</ele>
-    <name>254: -21.2%</name>
-    <desc>Pendiente -21.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.341134" lon="-4.876095">
-    <ele>690.3</ele>
-    <name>258: -22.9%</name>
-    <desc>Pendiente -22.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.341588" lon="-4.875358">
-    <ele>695.6</ele>
-    <name>266: 28.4%</name>
-    <desc>Pendiente 28.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342019" lon="-4.87374">
-    <ele>684.8</ele>
-    <name>280: -26.5%</name>
-    <desc>Pendiente -26.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342048" lon="-4.873659">
-    <ele>682.9</ele>
-    <name>281: -26.0%</name>
-    <desc>Pendiente -26.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342086" lon="-4.87354">
-    <ele>680.3</ele>
-    <name>282: -24.7%</name>
-    <desc>Pendiente -24.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342162" lon="-4.87291">
-    <ele>670.9</ele>
-    <name>291: -32.7%</name>
-    <desc>Pendiente -32.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342104" lon="-4.872746">
-    <ele>668.7</ele>
-    <name>293: -20.5%</name>
-    <desc>Pendiente -20.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342094" lon="-4.872668">
-    <ele>666.8</ele>
-    <name>294: -29.7%</name>
-    <desc>Pendiente -29.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342057" lon="-4.872409">
-    <ele>662.9</ele>
-    <name>296: -20.3%</name>
-    <desc>Pendiente -20.3% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.341959" lon="-4.87214">
-    <ele>658.3</ele>
-    <name>299: -26.2%</name>
-    <desc>Pendiente -26.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.341944" lon="-4.872007">
-    <ele>656.0</ele>
-    <name>301: -25.1%</name>
-    <desc>Pendiente -25.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.341941" lon="-4.871953">
-    <ele>655.0</ele>
-    <name>302: -22.8%</name>
-    <desc>Pendiente -22.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342069" lon="-4.871222">
-    <ele>659.0</ele>
-    <name>310: 32.2%</name>
-    <desc>Pendiente 32.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342151" lon="-4.871074">
-    <ele>662.1</ele>
-    <name>312: 25.0%</name>
-    <desc>Pendiente 25.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342202" lon="-4.871008">
-    <ele>663.8</ele>
-    <name>313: 21.8%</name>
-    <desc>Pendiente 21.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342262" lon="-4.870941">
-    <ele>666.2</ele>
-    <name>314: 27.9%</name>
-    <desc>Pendiente 27.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342338" lon="-4.87086">
-    <ele>668.7</ele>
-    <name>315: 23.4%</name>
-    <desc>Pendiente 23.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342388" lon="-4.870772">
-    <ele>670.7</ele>
-    <name>317: 28.5%</name>
-    <desc>Pendiente 28.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342404" lon="-4.870693">
-    <ele>672.1</ele>
-    <name>319: 25.0%</name>
-    <desc>Pendiente 25.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342391" lon="-4.870658">
-    <ele>673.2</ele>
-    <name>320: 34.6%</name>
-    <desc>Pendiente 34.6% (umbral 20%)</desc>
+    <name>Tramo 226: 43.7%</name>
+    <desc>Pendiente 43.7% en ventana de 7.1m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.342373" lon="-4.870643">
     <ele>674.8</ele>
-    <name>321: 68.4%</name>
-    <desc>Pendiente 68.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342343" lon="-4.870631">
-    <ele>675.9</ele>
-    <name>322: 31.7%</name>
-    <desc>Pendiente 31.7% (umbral 20%)</desc>
+    <name>Tramo 321: 68.4%</name>
+    <desc>Pendiente 68.4% en ventana de 7.9m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.34233" lon="-4.870585">
     <ele>678.1</ele>
-    <name>323: 55.1%</name>
-    <desc>Pendiente 55.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342373" lon="-4.87042">
-    <ele>680.9</ele>
-    <name>327: 33.2%</name>
-    <desc>Pendiente 33.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342375" lon="-4.870244">
-    <ele>683.2</ele>
-    <name>329: 23.3%</name>
-    <desc>Pendiente 23.3% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342363" lon="-4.870157">
-    <ele>685.5</ele>
-    <name>330: 32.1%</name>
-    <desc>Pendiente 32.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342502" lon="-4.869368">
-    <ele>693.0</ele>
-    <name>340: 23.5%</name>
-    <desc>Pendiente 23.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342503" lon="-4.869296">
-    <ele>693.6</ele>
-    <name>342: 20.5%</name>
-    <desc>Pendiente 20.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342518" lon="-4.869228">
-    <ele>695.3</ele>
-    <name>343: 29.6%</name>
-    <desc>Pendiente 29.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342533" lon="-4.869196">
-    <ele>696.0</ele>
-    <name>344: 22.7%</name>
-    <desc>Pendiente 22.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.34257" lon="-4.869129">
-    <ele>697.0</ele>
-    <name>346: 29.2%</name>
-    <desc>Pendiente 29.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342592" lon="-4.868984">
-    <ele>698.0</ele>
-    <name>350: 20.9%</name>
-    <desc>Pendiente 20.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342599" lon="-4.868878">
-    <ele>698.6</ele>
-    <name>354: 21.6%</name>
-    <desc>Pendiente 21.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342646" lon="-4.86871">
-    <ele>701.5</ele>
-    <name>358: 24.8%</name>
-    <desc>Pendiente 24.8% (umbral 20%)</desc>
+    <name>Tramo 323: 55.1%</name>
+    <desc>Pendiente 55.1% en ventana de 7.5m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.342659" lon="-4.868677">
     <ele>702.9</ele>
-    <name>359: 46.1%</name>
-    <desc>Pendiente 46.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.34267" lon="-4.868644">
-    <ele>703.7</ele>
-    <name>360: 27.2%</name>
-    <desc>Pendiente 27.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342687" lon="-4.86862">
-    <ele>704.6</ele>
-    <name>361: 33.2%</name>
-    <desc>Pendiente 33.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342768" lon="-4.868456">
-    <ele>707.0</ele>
-    <name>367: 23.5%</name>
-    <desc>Pendiente 23.5% (umbral 20%)</desc>
+    <name>Tramo 359: 46.1%</name>
+    <desc>Pendiente 46.1% en ventana de 7.1m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.342771" lon="-4.86842">
     <ele>708.3</ele>
-    <name>368: 44.4%</name>
-    <desc>Pendiente 44.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342787" lon="-4.868388">
-    <ele>707.8</ele>
-    <name>370: -23.4%</name>
-    <desc>Pendiente -23.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342797" lon="-4.86835">
-    <ele>708.5</ele>
-    <name>371: 21.4%</name>
-    <desc>Pendiente 21.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342832" lon="-4.868254">
-    <ele>708.7</ele>
-    <name>374: 23.8%</name>
-    <desc>Pendiente 23.8% (umbral 20%)</desc>
+    <name>Tramo 368: 44.4%</name>
+    <desc>Pendiente 44.4% en ventana de 9.8m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.342844" lon="-4.868147">
     <ele>708.2</ele>
-    <name>378: -35.5%</name>
-    <desc>Pendiente -35.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.34284" lon="-4.868128">
-    <ele>708.6</ele>
-    <name>379: 25.0%</name>
-    <desc>Pendiente 25.0% (umbral 20%)</desc>
+    <name>Tramo 378: -35.5%</name>
+    <desc>Pendiente -35.5% en ventana de 8.8m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.34283" lon="-4.868093">
     <ele>709.8</ele>
-    <name>380: 39.5%</name>
-    <desc>Pendiente 39.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342821" lon="-4.868063">
-    <ele>710.4</ele>
-    <name>381: 22.9%</name>
-    <desc>Pendiente 22.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.34282" lon="-4.868026">
-    <ele>709.8</ele>
-    <name>382: -20.0%</name>
-    <desc>Pendiente -20.0% (umbral 20%)</desc>
+    <name>Tramo 380: 39.5%</name>
+    <desc>Pendiente 39.5% en ventana de 4.6m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.342794" lon="-4.868">
     <ele>711.5</ele>
-    <name>383: 47.6%</name>
-    <desc>Pendiente 47.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342769" lon="-4.867916">
-    <ele>713.0</ele>
-    <name>385: 23.8%</name>
-    <desc>Pendiente 23.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342768" lon="-4.867872">
-    <ele>713.8</ele>
-    <name>386: 22.5%</name>
-    <desc>Pendiente 22.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342777" lon="-4.867821">
-    <ele>714.7</ele>
-    <name>387: 21.2%</name>
-    <desc>Pendiente 21.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342817" lon="-4.866784">
-    <ele>709.8</ele>
-    <name>403: -23.8%</name>
-    <desc>Pendiente -23.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.342945" lon="-4.86649">
-    <ele>707.0</ele>
-    <name>408: -23.0%</name>
-    <desc>Pendiente -23.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.343641" lon="-4.865514">
-    <ele>711.0</ele>
-    <name>419: 26.2%</name>
-    <desc>Pendiente 26.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.343649" lon="-4.865479">
-    <ele>711.7</ele>
-    <name>420: 23.6%</name>
-    <desc>Pendiente 23.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.343654" lon="-4.864883">
-    <ele>713.1</ele>
-    <name>428: -34.3%</name>
-    <desc>Pendiente -34.3% (umbral 20%)</desc>
+    <name>Tramo 383: 47.6%</name>
+    <desc>Pendiente 47.6% en ventana de 9.2m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.343645" lon="-4.864846">
     <ele>711.6</ele>
-    <name>429: -47.5%</name>
-    <desc>Pendiente -47.5% (umbral 20%)</desc>
+    <name>Tramo 429: -47.5%</name>
+    <desc>Pendiente -47.5% en ventana de 7.8m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.343629" lon="-4.864795">
     <ele>708.6</ele>
-    <name>430: -66.8%</name>
-    <desc>Pendiente -66.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.343774" lon="-4.864724">
-    <ele>710.0</ele>
-    <name>433: 26.3%</name>
-    <desc>Pendiente 26.3% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.34422" lon="-4.864299">
-    <ele>720.5</ele>
-    <name>437: 24.0%</name>
-    <desc>Pendiente 24.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.344269" lon="-4.86425">
-    <ele>722.2</ele>
-    <name>438: 25.2%</name>
-    <desc>Pendiente 25.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.344371" lon="-4.864171">
-    <ele>725.9</ele>
-    <name>439: 28.4%</name>
-    <desc>Pendiente 28.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.34505" lon="-4.86286">
-    <ele>739.7</ele>
-    <name>452: 31.4%</name>
-    <desc>Pendiente 31.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.345421" lon="-4.862413">
-    <ele>738.0</ele>
-    <name>459: -24.4%</name>
-    <desc>Pendiente -24.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.346394" lon="-4.860417">
-    <ele>752.8</ele>
-    <name>479: 33.6%</name>
-    <desc>Pendiente 33.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.346608" lon="-4.860102">
-    <ele>758.1</ele>
-    <name>482: 27.2%</name>
-    <desc>Pendiente 27.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.346672" lon="-4.859891">
-    <ele>761.0</ele>
-    <name>485: 22.8%</name>
-    <desc>Pendiente 22.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.346679" lon="-4.859816">
-    <ele>762.6</ele>
-    <name>486: 26.2%</name>
-    <desc>Pendiente 26.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.346712" lon="-4.859442">
-    <ele>765.7</ele>
-    <name>492: 22.6%</name>
-    <desc>Pendiente 22.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.347443" lon="-4.858441">
-    <ele>772.9</ele>
-    <name>502: 20.4%</name>
-    <desc>Pendiente 20.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.349261" lon="-4.857309">
-    <ele>775.0</ele>
-    <name>522: -24.7%</name>
-    <desc>Pendiente -24.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.349458" lon="-4.857402">
-    <ele>775.1</ele>
-    <name>527: 20.9%</name>
-    <desc>Pendiente 20.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.349494" lon="-4.857364">
-    <ele>776.4</ele>
-    <name>528: 25.8%</name>
-    <desc>Pendiente 25.8% (umbral 20%)</desc>
+    <name>Tramo 430: -66.8%</name>
+    <desc>Pendiente -66.8% en ventana de 4.5m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.349559" lon="-4.857289">
     <ele>779.9</ele>
-    <name>529: 37.1%</name>
-    <desc>Pendiente 37.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.349564" lon="-4.857201">
-    <ele>781.6</ele>
-    <name>530: 23.8%</name>
-    <desc>Pendiente 23.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.349612" lon="-4.857172">
-    <ele>783.6</ele>
-    <name>531: 34.3%</name>
-    <desc>Pendiente 34.3% (umbral 20%)</desc>
+    <name>Tramo 529: 37.1%</name>
+    <desc>Pendiente 37.1% en ventana de 9.4m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.349662" lon="-4.857132">
     <ele>786.7</ele>
-    <name>532: 48.2%</name>
-    <desc>Pendiente 48.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.349686" lon="-4.857104">
-    <ele>787.9</ele>
-    <name>533: 34.3%</name>
-    <desc>Pendiente 34.3% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.349687" lon="-4.857038">
-    <ele>789.2</ele>
-    <name>534: 24.3%</name>
-    <desc>Pendiente 24.3% (umbral 20%)</desc>
+    <name>Tramo 532: 48.2%</name>
+    <desc>Pendiente 48.2% en ventana de 6.4m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.349684" lon="-4.856987">
     <ele>790.8</ele>
-    <name>535: 38.7%</name>
-    <desc>Pendiente 38.7% (umbral 20%)</desc>
+    <name>Tramo 535: 38.7%</name>
+    <desc>Pendiente 38.7% en ventana de 9.5m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.349664" lon="-4.856915">
     <ele>792.2</ele>
-    <name>537: 45.6%</name>
-    <desc>Pendiente 45.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.349669" lon="-4.85688">
-    <ele>793.0</ele>
-    <name>538: 27.7%</name>
-    <desc>Pendiente 27.7% (umbral 20%)</desc>
+    <name>Tramo 537: 45.6%</name>
+    <desc>Pendiente 45.6% en ventana de 6.3m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.349672" lon="-4.856833">
     <ele>794.4</ele>
-    <name>539: 36.7%</name>
-    <desc>Pendiente 36.7% (umbral 20%)</desc>
+    <name>Tramo 539: 36.7%</name>
+    <desc>Pendiente 36.7% en ventana de 6.7m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.349687" lon="-4.856781">
     <ele>796.3</ele>
-    <name>540: 42.0%</name>
-    <desc>Pendiente 42.0% (umbral 20%)</desc>
+    <name>Tramo 540: 42.0%</name>
+    <desc>Pendiente 42.0% en ventana de 4.5m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.349697" lon="-4.856758">
     <ele>797.1</ele>
-    <name>541: 36.9%</name>
-    <desc>Pendiente 36.9% (umbral 20%)</desc>
+    <name>Tramo 541: 36.9%</name>
+    <desc>Pendiente 36.9% en ventana de 2.2m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.349751" lon="-4.856698">
     <ele>800.2</ele>
-    <name>542: 40.2%</name>
-    <desc>Pendiente 40.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.349786" lon="-4.856696">
-    <ele>801.3</ele>
-    <name>543: 28.2%</name>
-    <desc>Pendiente 28.2% (umbral 20%)</desc>
+    <name>Tramo 542: 40.2%</name>
+    <desc>Pendiente 40.2% en ventana de 7.7m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.349811" lon="-4.856696">
     <ele>802.6</ele>
-    <name>544: 46.8%</name>
-    <desc>Pendiente 46.8% (umbral 20%)</desc>
+    <name>Tramo 544: 46.8%</name>
+    <desc>Pendiente 46.8% en ventana de 6.7m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.349839" lon="-4.856709">
     <ele>803.8</ele>
-    <name>545: 36.5%</name>
-    <desc>Pendiente 36.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.349862" lon="-4.856701">
-    <ele>804.4</ele>
-    <name>546: 22.7%</name>
-    <desc>Pendiente 22.7% (umbral 20%)</desc>
+    <name>Tramo 545: 36.5%</name>
+    <desc>Pendiente 36.5% en ventana de 3.3m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.349907" lon="-4.856643">
     <ele>808.3</ele>
-    <name>547: 56.9%</name>
-    <desc>Pendiente 56.9% (umbral 20%)</desc>
+    <name>Tramo 547: 56.9%</name>
+    <desc>Pendiente 56.9% en ventana de 9.5m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.34996" lon="-4.856639">
     <ele>810.7</ele>
-    <name>548: 40.7%</name>
-    <desc>Pendiente 40.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350007" lon="-4.856625">
-    <ele>812.5</ele>
-    <name>549: 33.7%</name>
-    <desc>Pendiente 33.7% (umbral 20%)</desc>
+    <name>Tramo 548: 40.7%</name>
+    <desc>Pendiente 40.7% en ventana de 5.9m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.350055" lon="-4.856627">
     <ele>814.9</ele>
-    <name>550: 44.9%</name>
-    <desc>Pendiente 44.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350098" lon="-4.856687">
-    <ele>816.4</ele>
-    <name>551: 22.0%</name>
-    <desc>Pendiente 22.0% (umbral 20%)</desc>
+    <name>Tramo 550: 44.9%</name>
+    <desc>Pendiente 44.9% en ventana de 5.3m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.350144" lon="-4.856737">
     <ele>819.0</ele>
-    <name>552: 39.9%</name>
-    <desc>Pendiente 39.9% (umbral 20%)</desc>
+    <name>Tramo 552: 39.9%</name>
+    <desc>Pendiente 39.9% en ventana de 6.5m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.350291" lon="-4.856987">
     <ele>824.3</ele>
-    <name>556: 35.8%</name>
-    <desc>Pendiente 35.8% (umbral 20%)</desc>
+    <name>Tramo 556: 35.8%</name>
+    <desc>Pendiente 35.8% en ventana de 3.9m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.350304" lon="-4.856972">
     <ele>825.1</ele>
-    <name>557: 42.4%</name>
-    <desc>Pendiente 42.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350298" lon="-4.856951">
-    <ele>824.7</ele>
-    <name>558: -21.9%</name>
-    <desc>Pendiente -21.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350302" lon="-4.856872">
-    <ele>826.5</ele>
-    <name>559: 28.1%</name>
-    <desc>Pendiente 28.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350311" lon="-4.856769">
-    <ele>828.2</ele>
-    <name>560: 20.3%</name>
-    <desc>Pendiente 20.3% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350335" lon="-4.856465">
-    <ele>833.3</ele>
-    <name>563: 31.7%</name>
-    <desc>Pendiente 31.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350339" lon="-4.856311">
-    <ele>835.9</ele>
-    <name>565: 22.6%</name>
-    <desc>Pendiente 22.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350321" lon="-4.856211">
-    <ele>837.9</ele>
-    <name>566: 24.0%</name>
-    <desc>Pendiente 24.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350304" lon="-4.85607">
-    <ele>841.2</ele>
-    <name>567: 28.5%</name>
-    <desc>Pendiente 28.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350292" lon="-4.855953">
-    <ele>843.4</ele>
-    <name>568: 23.0%</name>
-    <desc>Pendiente 23.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350315" lon="-4.855731">
-    <ele>847.6</ele>
-    <name>570: 26.0%</name>
-    <desc>Pendiente 26.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350338" lon="-4.855612">
-    <ele>849.6</ele>
-    <name>571: 20.1%</name>
-    <desc>Pendiente 20.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350375" lon="-4.855478">
-    <ele>851.7</ele>
-    <name>573: 25.4%</name>
-    <desc>Pendiente 25.4% (umbral 20%)</desc>
+    <name>Tramo 557: 42.4%</name>
+    <desc>Pendiente 42.4% en ventana de 1.9m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.350396" lon="-4.855504">
     <ele>852.8</ele>
-    <name>574: 35.0%</name>
-    <desc>Pendiente 35.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350438" lon="-4.855648">
-    <ele>855.3</ele>
-    <name>576: 24.9%</name>
-    <desc>Pendiente 24.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350584" lon="-4.855947">
-    <ele>859.3</ele>
-    <name>580: 24.8%</name>
-    <desc>Pendiente 24.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.35067" lon="-4.85597">
-    <ele>860.8</ele>
-    <name>582: 22.0%</name>
-    <desc>Pendiente 22.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350715" lon="-4.855952">
-    <ele>862.5</ele>
-    <name>583: 32.6%</name>
-    <desc>Pendiente 32.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350785" lon="-4.855945">
-    <ele>865.0</ele>
-    <name>584: 32.0%</name>
-    <desc>Pendiente 32.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350828" lon="-4.855943">
-    <ele>866.3</ele>
-    <name>585: 27.2%</name>
-    <desc>Pendiente 27.2% (umbral 20%)</desc>
+    <name>Tramo 574: 35.0%</name>
+    <desc>Pendiente 35.0% en ventana de 5.5m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.350883" lon="-4.855945">
     <ele>869.0</ele>
-    <name>586: 44.1%</name>
-    <desc>Pendiente 44.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.35109" lon="-4.855837">
-    <ele>873.0</ele>
-    <name>592: 22.3%</name>
-    <desc>Pendiente 22.3% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351177" lon="-4.85583">
-    <ele>875.0</ele>
-    <name>594: 26.4%</name>
-    <desc>Pendiente 26.4% (umbral 20%)</desc>
+    <name>Tramo 586: 44.1%</name>
+    <desc>Pendiente 44.1% en ventana de 6.1m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.351217" lon="-4.855834">
     <ele>876.7</ele>
-    <name>595: 38.1%</name>
-    <desc>Pendiente 38.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351252" lon="-4.855837">
-    <ele>877.7</ele>
-    <name>596: 25.6%</name>
-    <desc>Pendiente 25.6% (umbral 20%)</desc>
+    <name>Tramo 595: 38.1%</name>
+    <desc>Pendiente 38.1% en ventana de 8.2m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.351291" lon="-4.855835">
     <ele>879.8</ele>
-    <name>597: 48.4%</name>
-    <desc>Pendiente 48.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351336" lon="-4.855832">
-    <ele>881.5</ele>
-    <name>598: 33.9%</name>
-    <desc>Pendiente 33.9% (umbral 20%)</desc>
+    <name>Tramo 597: 48.4%</name>
+    <desc>Pendiente 48.4% en ventana de 8.2m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.351381" lon="-4.855834">
     <ele>884.8</ele>
-    <name>599: 65.9%</name>
-    <desc>Pendiente 65.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351425" lon="-4.855841">
-    <ele>886.3</ele>
-    <name>600: 30.5%</name>
-    <desc>Pendiente 30.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351464" lon="-4.85585">
-    <ele>887.3</ele>
-    <name>601: 22.7%</name>
-    <desc>Pendiente 22.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351534" lon="-4.855827">
-    <ele>889.2</ele>
-    <name>603: 32.7%</name>
-    <desc>Pendiente 32.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351726" lon="-4.855619">
-    <ele>893.9</ele>
-    <name>606: 22.2%</name>
-    <desc>Pendiente 22.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.35178" lon="-4.855548">
-    <ele>895.7</ele>
-    <name>607: 21.7%</name>
-    <desc>Pendiente 21.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351863" lon="-4.855332">
-    <ele>900.0</ele>
-    <name>610: 33.5%</name>
-    <desc>Pendiente 33.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351893" lon="-4.855277">
-    <ele>901.8</ele>
-    <name>611: 32.4%</name>
-    <desc>Pendiente 32.4% (umbral 20%)</desc>
+    <name>Tramo 599: 65.9%</name>
+    <desc>Pendiente 65.9% en ventana de 5.0m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.351965" lon="-4.855099">
     <ele>905.6</ele>
-    <name>614: 40.2%</name>
-    <desc>Pendiente 40.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352011" lon="-4.855044">
-    <ele>907.2</ele>
-    <name>615: 23.6%</name>
-    <desc>Pendiente 23.6% (umbral 20%)</desc>
+    <name>Tramo 614: 40.2%</name>
+    <desc>Pendiente 40.2% en ventana de 5.7m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.352059" lon="-4.855082">
     <ele>909.9</ele>
-    <name>616: 43.8%</name>
-    <desc>Pendiente 43.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352153" lon="-4.855153">
-    <ele>915.0</ele>
-    <name>617: 42.8%</name>
-    <desc>Pendiente 42.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352214" lon="-4.855221">
-    <ele>917.5</ele>
-    <name>619: 34.7%</name>
-    <desc>Pendiente 34.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352244" lon="-4.85527">
-    <ele>919.3</ele>
-    <name>620: 34.7%</name>
-    <desc>Pendiente 34.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352296" lon="-4.855363">
-    <ele>922.0</ele>
-    <name>621: 28.5%</name>
-    <desc>Pendiente 28.5% (umbral 20%)</desc>
+    <name>Tramo 616: 43.8%</name>
+    <desc>Pendiente 43.8% en ventana de 6.2m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.352385" lon="-4.855487">
     <ele>925.6</ele>
-    <name>624: 52.2%</name>
-    <desc>Pendiente 52.2% (umbral 20%)</desc>
+    <name>Tramo 624: 52.2%</name>
+    <desc>Pendiente 52.2% en ventana de 10.0m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.352405" lon="-4.855435">
     <ele>927.3</ele>
-    <name>625: 35.7%</name>
-    <desc>Pendiente 35.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352447" lon="-4.85522">
-    <ele>931.5</ele>
-    <name>627: 26.4%</name>
-    <desc>Pendiente 26.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352494" lon="-4.854967">
-    <ele>934.9</ele>
-    <name>630: 26.4%</name>
-    <desc>Pendiente 26.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352498" lon="-4.854923">
-    <ele>936.0</ele>
-    <name>631: 30.7%</name>
-    <desc>Pendiente 30.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352511" lon="-4.854869">
-    <ele>937.5</ele>
-    <name>632: 32.6%</name>
-    <desc>Pendiente 32.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.35254" lon="-4.854594">
-    <ele>942.1</ele>
-    <name>635: 29.7%</name>
-    <desc>Pendiente 29.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352584" lon="-4.854469">
-    <ele>944.4</ele>
-    <name>637: 22.5%</name>
-    <desc>Pendiente 22.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352593" lon="-4.854408">
-    <ele>945.8</ele>
-    <name>638: 27.8%</name>
-    <desc>Pendiente 27.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352641" lon="-4.854298">
-    <ele>948.4</ele>
-    <name>639: 25.1%</name>
-    <desc>Pendiente 25.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352692" lon="-4.854172">
-    <ele>951.2</ele>
-    <name>640: 24.0%</name>
-    <desc>Pendiente 24.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352746" lon="-4.854047">
-    <ele>954.3</ele>
-    <name>641: 26.4%</name>
-    <desc>Pendiente 26.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352793" lon="-4.853915">
-    <ele>957.3</ele>
-    <name>642: 25.2%</name>
-    <desc>Pendiente 25.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352841" lon="-4.853826">
-    <ele>959.4</ele>
-    <name>643: 23.4%</name>
-    <desc>Pendiente 23.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352909" lon="-4.853683">
-    <ele>963.8</ele>
-    <name>644: 31.8%</name>
-    <desc>Pendiente 31.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352964" lon="-4.853697">
-    <ele>965.9</ele>
-    <name>645: 33.8%</name>
-    <desc>Pendiente 33.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353011" lon="-4.853689">
-    <ele>967.0</ele>
-    <name>646: 20.9%</name>
-    <desc>Pendiente 20.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353044" lon="-4.853619">
-    <ele>969.0</ele>
-    <name>647: 29.6%</name>
-    <desc>Pendiente 29.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353114" lon="-4.853464">
-    <ele>972.3</ele>
-    <name>648: 22.4%</name>
-    <desc>Pendiente 22.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353524" lon="-4.851363">
-    <ele>973.4</ele>
-    <name>668: -21.5%</name>
-    <desc>Pendiente -21.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353775" lon="-4.848956">
-    <ele>977.6</ele>
-    <name>678: -21.7%</name>
-    <desc>Pendiente -21.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353692" lon="-4.848896">
-    <ele>973.0</ele>
-    <name>679: -44.1%</name>
-    <desc>Pendiente -44.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353651" lon="-4.848849">
-    <ele>971.0</ele>
-    <name>680: -33.7%</name>
-    <desc>Pendiente -33.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353627" lon="-4.848712">
-    <ele>968.6</ele>
-    <name>682: -24.8%</name>
-    <desc>Pendiente -24.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353623" lon="-4.848677">
-    <ele>968.0</ele>
-    <name>683: -20.9%</name>
-    <desc>Pendiente -20.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353524" lon="-4.848448">
-    <ele>966.2</ele>
-    <name>687: -22.9%</name>
-    <desc>Pendiente -22.9% (umbral 20%)</desc>
+    <name>Tramo 625: 35.7%</name>
+    <desc>Pendiente 35.7% en ventana de 4.8m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.353505" lon="-4.848296">
     <ele>966.0</ele>
-    <name>692: 36.6%</name>
-    <desc>Pendiente 36.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353352" lon="-4.847951">
-    <ele>964.0</ele>
-    <name>701: -22.8%</name>
-    <desc>Pendiente -22.8% (umbral 20%)</desc>
+    <name>Tramo 692: 36.6%</name>
+    <desc>Pendiente 36.6% en ventana de 9.8m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.353343" lon="-4.847922">
     <ele>962.7</ele>
-    <name>702: -51.0%</name>
-    <desc>Pendiente -51.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353311" lon="-4.847896">
-    <ele>962.9</ele>
-    <name>704: 32.5%</name>
-    <desc>Pendiente 32.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353304" lon="-4.847874">
-    <ele>962.5</ele>
-    <name>705: -20.6%</name>
-    <desc>Pendiente -20.6% (umbral 20%)</desc>
+    <name>Tramo 702: -51.0%</name>
+    <desc>Pendiente -51.0% en ventana de 8.8m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.353283" lon="-4.847857">
     <ele>963.5</ele>
-    <name>707: 59.4%</name>
-    <desc>Pendiente 59.4% (umbral 20%)</desc>
+    <name>Tramo 707: 59.4%</name>
+    <desc>Pendiente 59.4% en ventana de 8.9m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.353282" lon="-4.847818">
     <ele>962.3</ele>
-    <name>708: -38.0%</name>
-    <desc>Pendiente -38.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353218" lon="-4.847704">
-    <ele>962.1</ele>
-    <name>711: -22.6%</name>
-    <desc>Pendiente -22.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352948" lon="-4.847509">
-    <ele>965.4</ele>
-    <name>717: -26.8%</name>
-    <desc>Pendiente -26.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.35281" lon="-4.847145">
-    <ele>967.0</ele>
-    <name>726: 33.2%</name>
-    <desc>Pendiente 33.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352827" lon="-4.846934">
-    <ele>969.0</ele>
-    <name>730: 24.7%</name>
-    <desc>Pendiente 24.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352831" lon="-4.846888">
-    <ele>970.0</ele>
-    <name>731: 26.7%</name>
-    <desc>Pendiente 26.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.35277" lon="-4.846409">
-    <ele>970.0</ele>
-    <name>740: -22.8%</name>
-    <desc>Pendiente -22.8% (umbral 20%)</desc>
+    <name>Tramo 708: -38.0%</name>
+    <desc>Pendiente -38.0% en ventana de 3.2m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.352752" lon="-4.846389">
     <ele>968.5</ele>
-    <name>741: -58.3%</name>
-    <desc>Pendiente -58.3% (umbral 20%)</desc>
+    <name>Tramo 741: -58.3%</name>
+    <desc>Pendiente -58.3% en ventana de 7.0m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.352709" lon="-4.846309">
     <ele>966.0</ele>
-    <name>743: -37.6%</name>
-    <desc>Pendiente -37.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352692" lon="-4.846269">
-    <ele>965.0</ele>
-    <name>744: -26.7%</name>
-    <desc>Pendiente -26.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352231" lon="-4.845732">
-    <ele>969.0</ele>
-    <name>755: 25.1%</name>
-    <desc>Pendiente 25.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352206" lon="-4.845695">
-    <ele>970.0</ele>
-    <name>756: 24.5%</name>
-    <desc>Pendiente 24.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352127" lon="-4.845654">
-    <ele>971.9</ele>
-    <name>758: 20.2%</name>
-    <desc>Pendiente 20.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352046" lon="-4.845637">
-    <ele>971.2</ele>
-    <name>760: -24.4%</name>
-    <desc>Pendiente -24.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351983" lon="-4.84552">
-    <ele>973.8</ele>
-    <name>762: 29.9%</name>
-    <desc>Pendiente 29.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351962" lon="-4.845454">
-    <ele>975.4</ele>
-    <name>763: 27.5%</name>
-    <desc>Pendiente 27.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351672" lon="-4.845369">
-    <ele>977.6</ele>
-    <name>768: 27.8%</name>
-    <desc>Pendiente 27.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351642" lon="-4.845293">
-    <ele>979.5</ele>
-    <name>769: 27.2%</name>
-    <desc>Pendiente 27.2% (umbral 20%)</desc>
+    <name>Tramo 743: -37.6%</name>
+    <desc>Pendiente -37.6% en ventana de 8.3m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.351619" lon="-4.845148">
     <ele>982.9</ele>
-    <name>771: 67.0%</name>
-    <desc>Pendiente 67.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351923" lon="-4.84458">
-    <ele>988.9</ele>
-    <name>778: 31.0%</name>
-    <desc>Pendiente 31.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351991" lon="-4.844534">
-    <ele>991.4</ele>
-    <name>779: 29.7%</name>
-    <desc>Pendiente 29.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352051" lon="-4.844499">
-    <ele>993.0</ele>
-    <name>780: 22.1%</name>
-    <desc>Pendiente 22.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352079" lon="-4.8444">
-    <ele>996.0</ele>
-    <name>781: 34.9%</name>
-    <desc>Pendiente 34.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352179" lon="-4.844077">
-    <ele>1001.6</ele>
-    <name>784: 27.3%</name>
-    <desc>Pendiente 27.3% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.3522" lon="-4.843979">
-    <ele>1004.0</ele>
-    <name>786: 32.9%</name>
-    <desc>Pendiente 32.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352428" lon="-4.844109">
-    <ele>1007.2</ele>
-    <name>789: 23.2%</name>
-    <desc>Pendiente 23.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352523" lon="-4.844048">
-    <ele>1002.2</ele>
-    <name>790: -42.9%</name>
-    <desc>Pendiente -42.9% (umbral 20%)</desc>
+    <name>Tramo 771: 67.0%</name>
+    <desc>Pendiente 67.0% en ventana de 5.1m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.352587" lon="-4.844005">
     <ele>997.8</ele>
-    <name>791: -55.5%</name>
-    <desc>Pendiente -55.5% (umbral 20%)</desc>
+    <name>Tramo 791: -55.5%</name>
+    <desc>Pendiente -55.5% en ventana de 7.9m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.352626" lon="-4.843899">
     <ele>992.8</ele>
-    <name>792: -52.0%</name>
-    <desc>Pendiente -52.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352657" lon="-4.843809">
-    <ele>990.1</ele>
-    <name>793: -33.5%</name>
-    <desc>Pendiente -33.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352752" lon="-4.843765">
-    <ele>983.0</ele>
-    <name>794: -63.7%</name>
-    <desc>Pendiente -63.7% (umbral 20%)</desc>
+    <name>Tramo 792: -52.0%</name>
+    <desc>Pendiente -52.0% en ventana de 9.6m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.352803" lon="-4.843687">
     <ele>979.1</ele>
-    <name>795: -46.0%</name>
-    <desc>Pendiente -46.0% (umbral 20%)</desc>
+    <name>Tramo 795: -46.0%</name>
+    <desc>Pendiente -46.0% en ventana de 8.5m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.35288" lon="-4.843684">
     <ele>973.9</ele>
-    <name>796: -60.7%</name>
-    <desc>Pendiente -60.7% (umbral 20%)</desc>
+    <name>Tramo 796: -60.7%</name>
+    <desc>Pendiente -60.7% en ventana de 8.6m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.352934" lon="-4.843639">
     <ele>969.7</ele>
-    <name>797: -59.8%</name>
-    <desc>Pendiente -59.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352987" lon="-4.843521">
-    <ele>964.0</ele>
-    <name>798: -50.8%</name>
-    <desc>Pendiente -50.8% (umbral 20%)</desc>
+    <name>Tramo 797: -59.8%</name>
+    <desc>Pendiente -59.8% en ventana de 7.0m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.353044" lon="-4.843431">
     <ele>959.2</ele>
-    <name>799: -49.7%</name>
-    <desc>Pendiente -49.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353137" lon="-4.843368">
-    <ele>953.5</ele>
-    <name>800: -49.4%</name>
-    <desc>Pendiente -49.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353136" lon="-4.843239">
-    <ele>950.3</ele>
-    <name>801: -30.7%</name>
-    <desc>Pendiente -30.7% (umbral 20%)</desc>
+    <name>Tramo 799: -49.7%</name>
+    <desc>Pendiente -49.7% en ventana de 9.7m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.353102" lon="-4.843082">
     <ele>949.1</ele>
-    <name>804: -45.0%</name>
-    <desc>Pendiente -45.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.35313" lon="-4.84213">
-    <ele>951.9</ele>
-    <name>813: 36.6%</name>
-    <desc>Pendiente 36.6% (umbral 20%)</desc>
+    <name>Tramo 804: -45.0%</name>
+    <desc>Pendiente -45.0% en ventana de 6.9m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.353097" lon="-4.841957">
     <ele>948.4</ele>
-    <name>815: -46.1%</name>
-    <desc>Pendiente -46.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.35307" lon="-4.841867">
-    <ele>945.8</ele>
-    <name>816: -33.0%</name>
-    <desc>Pendiente -33.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352994" lon="-4.841286">
-    <ele>940.4</ele>
-    <name>822: -25.9%</name>
-    <desc>Pendiente -25.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352891" lon="-4.841163">
-    <ele>935.5</ele>
-    <name>823: -32.3%</name>
-    <desc>Pendiente -32.3% (umbral 20%)</desc>
+    <name>Tramo 815: -46.1%</name>
+    <desc>Pendiente -46.1% en ventana de 7.2m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.352878" lon="-4.84086">
     <ele>938.8</ele>
-    <name>826: 48.7%</name>
-    <desc>Pendiente 48.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352889" lon="-4.840805">
-    <ele>940.0</ele>
-    <name>827: 26.0%</name>
-    <desc>Pendiente 26.0% (umbral 20%)</desc>
+    <name>Tramo 826: 48.7%</name>
+    <desc>Pendiente 48.7% en ventana de 4.9m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.352917" lon="-4.840686">
     <ele>940.4</ele>
-    <name>829: 39.0%</name>
-    <desc>Pendiente 39.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352851" lon="-4.840542">
-    <ele>937.5</ele>
-    <name>830: -21.1%</name>
-    <desc>Pendiente -21.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352696" lon="-4.840281">
-    <ele>937.0</ele>
-    <name>835: -21.5%</name>
-    <desc>Pendiente -21.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352672" lon="-4.839865">
-    <ele>934.8</ele>
-    <name>840: 20.6%</name>
-    <desc>Pendiente 20.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352723" lon="-4.83978">
-    <ele>937.0</ele>
-    <name>841: 24.7%</name>
-    <desc>Pendiente 24.7% (umbral 20%)</desc>
+    <name>Tramo 829: 39.0%</name>
+    <desc>Pendiente 39.0% en ventana de 3.1m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.352847" lon="-4.839675">
     <ele>933.3</ele>
-    <name>843: -41.9%</name>
-    <desc>Pendiente -41.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352972" lon="-4.839507">
-    <ele>935.3</ele>
-    <name>846: 20.2%</name>
-    <desc>Pendiente 20.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353437" lon="-4.838895">
-    <ele>939.1</ele>
-    <name>854: 20.9%</name>
-    <desc>Pendiente 20.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353774" lon="-4.838644">
-    <ele>947.7</ele>
-    <name>859: 33.1%</name>
-    <desc>Pendiente 33.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353875" lon="-4.838532">
-    <ele>951.3</ele>
-    <name>860: 24.9%</name>
-    <desc>Pendiente 24.9% (umbral 20%)</desc>
+    <name>Tramo 843: -41.9%</name>
+    <desc>Pendiente -41.9% en ventana de 8.6m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.353899" lon="-4.838473">
     <ele>953.7</ele>
-    <name>861: 43.9%</name>
-    <desc>Pendiente 43.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353943" lon="-4.838434">
-    <ele>955.2</ele>
-    <name>862: 25.8%</name>
-    <desc>Pendiente 25.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353973" lon="-4.838381">
-    <ele>957.1</ele>
-    <name>863: 35.0%</name>
-    <desc>Pendiente 35.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353994" lon="-4.838337">
-    <ele>958.5</ele>
-    <name>864: 32.9%</name>
-    <desc>Pendiente 32.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.354004" lon="-4.838235">
-    <ele>961.4</ele>
-    <name>865: 34.8%</name>
-    <desc>Pendiente 34.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.354003" lon="-4.838083">
-    <ele>964.8</ele>
-    <name>866: 27.7%</name>
-    <desc>Pendiente 27.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.354006" lon="-4.837969">
-    <ele>967.2</ele>
-    <name>867: 26.0%</name>
-    <desc>Pendiente 26.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.354236" lon="-4.83741">
-    <ele>965.0</ele>
-    <name>874: -21.2%</name>
-    <desc>Pendiente -21.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.354247" lon="-4.837318">
-    <ele>963.4</ele>
-    <name>875: -21.2%</name>
-    <desc>Pendiente -21.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.35436" lon="-4.83656">
-    <ele>955.2</ele>
-    <name>880: -30.6%</name>
-    <desc>Pendiente -30.6% (umbral 20%)</desc>
+    <name>Tramo 861: 43.9%</name>
+    <desc>Pendiente 43.9% en ventana de 5.5m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.354344" lon="-4.836473">
     <ele>952.0</ele>
-    <name>881: -44.1%</name>
-    <desc>Pendiente -44.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.354421" lon="-4.83508">
-    <ele>950.2</ele>
-    <name>897: -21.3%</name>
-    <desc>Pendiente -21.3% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.354518" lon="-4.834923">
-    <ele>954.1</ele>
-    <name>899: 31.3%</name>
-    <desc>Pendiente 31.3% (umbral 20%)</desc>
+    <name>Tramo 881: -44.1%</name>
+    <desc>Pendiente -44.1% en ventana de 7.3m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.354561" lon="-4.834867">
     <ele>956.6</ele>
-    <name>900: 38.0%</name>
-    <desc>Pendiente 38.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.354572" lon="-4.834664">
-    <ele>960.1</ele>
-    <name>902: 25.4%</name>
-    <desc>Pendiente 25.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.354121" lon="-4.833659">
-    <ele>963.0</ele>
-    <name>911: 22.3%</name>
-    <desc>Pendiente 22.3% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.354132" lon="-4.833534">
-    <ele>966.0</ele>
-    <name>912: 29.5%</name>
-    <desc>Pendiente 29.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.353174" lon="-4.833511">
-    <ele>963.9</ele>
-    <name>927: -20.7%</name>
-    <desc>Pendiente -20.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352364" lon="-4.833336">
-    <ele>966.0</ele>
-    <name>940: 20.8%</name>
-    <desc>Pendiente 20.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352684" lon="-4.831332">
-    <ele>969.1</ele>
-    <name>952: -26.5%</name>
-    <desc>Pendiente -26.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352328" lon="-4.830418">
-    <ele>966.7</ele>
-    <name>961: -27.9%</name>
-    <desc>Pendiente -27.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352248" lon="-4.830321">
-    <ele>961.8</ele>
-    <name>962: -41.3%</name>
-    <desc>Pendiente -41.3% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352313" lon="-4.82966">
-    <ele>962.9</ele>
-    <name>968: 28.8%</name>
-    <desc>Pendiente 28.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351495" lon="-4.826712">
-    <ele>967.6</ele>
-    <name>980: -24.5%</name>
-    <desc>Pendiente -24.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351362" lon="-4.826484">
-    <ele>962.5</ele>
-    <name>981: -21.6%</name>
-    <desc>Pendiente -21.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350867" lon="-4.825114">
-    <ele>970.0</ele>
-    <name>986: 27.9%</name>
-    <desc>Pendiente 27.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.349818" lon="-4.820344">
-    <ele>945.0</ele>
-    <name>1005: -20.4%</name>
-    <desc>Pendiente -20.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.349605" lon="-4.81679">
-    <ele>953.0</ele>
-    <name>1033: -23.2%</name>
-    <desc>Pendiente -23.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.349697" lon="-4.816231">
-    <ele>949.0</ele>
-    <name>1046: -26.5%</name>
-    <desc>Pendiente -26.5% (umbral 20%)</desc>
+    <name>Tramo 900: 38.0%</name>
+    <desc>Pendiente 38.0% en ventana de 6.6m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.34967" lon="-4.816182">
     <ele>947.1</ele>
-    <name>1047: -38.2%</name>
-    <desc>Pendiente -38.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.349649" lon="-4.816153">
-    <ele>946.0</ele>
-    <name>1048: -33.2%</name>
-    <desc>Pendiente -33.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.349626" lon="-4.816109">
-    <ele>945.0</ele>
-    <name>1049: -22.8%</name>
-    <desc>Pendiente -22.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.349611" lon="-4.816087">
-    <ele>944.3</ele>
-    <name>1050: -28.7%</name>
-    <desc>Pendiente -28.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.349609" lon="-4.815816">
-    <ele>942.7</ele>
-    <name>1056: 20.7%</name>
-    <desc>Pendiente 20.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.349616" lon="-4.815764">
-    <ele>943.7</ele>
-    <name>1057: 23.4%</name>
-    <desc>Pendiente 23.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350351" lon="-4.81442">
-    <ele>959.8</ele>
-    <name>1076: 26.6%</name>
-    <desc>Pendiente 26.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350371" lon="-4.814368">
-    <ele>960.8</ele>
-    <name>1077: 21.0%</name>
-    <desc>Pendiente 21.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350397" lon="-4.814307">
-    <ele>962.0</ele>
-    <name>1078: 21.0%</name>
-    <desc>Pendiente 21.0% (umbral 20%)</desc>
+    <name>Tramo 1047: -38.2%</name>
+    <desc>Pendiente -38.2% en ventana de 8.4m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.350757" lon="-4.813811">
     <ele>968.8</ele>
-    <name>1085: 35.3%</name>
-    <desc>Pendiente 35.3% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.35081" lon="-4.813752">
-    <ele>970.7</ele>
-    <name>1086: 25.1%</name>
-    <desc>Pendiente 25.1% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350918" lon="-4.813644">
-    <ele>975.0</ele>
-    <name>1087: 29.0%</name>
-    <desc>Pendiente 29.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.350973" lon="-4.813596">
-    <ele>977.1</ele>
-    <name>1088: 29.0%</name>
-    <desc>Pendiente 29.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351038" lon="-4.813528">
-    <ele>980.0</ele>
-    <name>1089: 31.9%</name>
-    <desc>Pendiente 31.9% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351109" lon="-4.813445">
-    <ele>982.5</ele>
-    <name>1091: 28.0%</name>
-    <desc>Pendiente 28.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351145" lon="-4.813379">
-    <ele>984.2</ele>
-    <name>1092: 25.5%</name>
-    <desc>Pendiente 25.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351159" lon="-4.813327">
-    <ele>985.4</ele>
-    <name>1093: 26.8%</name>
-    <desc>Pendiente 26.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351163" lon="-4.813281">
-    <ele>986.2</ele>
-    <name>1094: 21.3%</name>
-    <desc>Pendiente 21.3% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351168" lon="-4.813252">
-    <ele>987.0</ele>
-    <name>1095: 33.2%</name>
-    <desc>Pendiente 33.2% (umbral 20%)</desc>
+    <name>Tramo 1085: 35.3%</name>
+    <desc>Pendiente 35.3% en ventana de 7.9m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.3512" lon="-4.813182">
     <ele>989.0</ele>
-    <name>1097: 39.0%</name>
-    <desc>Pendiente 39.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351201" lon="-4.81314">
-    <ele>989.8</ele>
-    <name>1098: 23.5%</name>
-    <desc>Pendiente 23.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351211" lon="-4.812988">
-    <ele>992.8</ele>
-    <name>1100: 29.6%</name>
-    <desc>Pendiente 29.6% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351213" lon="-4.812957">
-    <ele>993.4</ele>
-    <name>1101: 23.8%</name>
-    <desc>Pendiente 23.8% (umbral 20%)</desc>
+    <name>Tramo 1097: 39.0%</name>
+    <desc>Pendiente 39.0% en ventana de 9.2m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.351203" lon="-4.812937">
     <ele>994.2</ele>
-    <name>1102: 40.8%</name>
-    <desc>Pendiente 40.8% (umbral 20%)</desc>
+    <name>Tramo 1102: 40.8%</name>
+    <desc>Pendiente 40.8% en ventana de 4.5m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.351203" lon="-4.812923">
     <ele>994.8</ele>
-    <name>1103: 53.0%</name>
-    <desc>Pendiente 53.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351234" lon="-4.812876">
-    <ele>995.7</ele>
-    <name>1105: 29.0%</name>
-    <desc>Pendiente 29.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351268" lon="-4.812706">
-    <ele>995.0</ele>
-    <name>1109: -25.5%</name>
-    <desc>Pendiente -25.5% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351396" lon="-4.812341">
-    <ele>997.6</ele>
-    <name>1113: 21.7%</name>
-    <desc>Pendiente 21.7% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351412" lon="-4.812251">
-    <ele>999.5</ele>
-    <name>1114: 25.4%</name>
-    <desc>Pendiente 25.4% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.351995" lon="-4.810892">
-    <ele>999.0</ele>
-    <name>1126: -37.0%</name>
-    <desc>Pendiente -37.0% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352036" lon="-4.810765">
-    <ele>994.8</ele>
-    <name>1127: -37.4%</name>
-    <desc>Pendiente -37.4% (umbral 20%)</desc>
+    <name>Tramo 1103: 53.0%</name>
+    <desc>Pendiente 53.0% en ventana de 1.1m (umbral 35%)</desc>
   </wpt>
   <wpt lat="43.352064" lon="-4.810663">
     <ele>991.6</ele>
-    <name>1128: -36.3%</name>
-    <desc>Pendiente -36.3% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352067" lon="-4.810531">
-    <ele>987.2</ele>
-    <name>1129: -41.2%</name>
-    <desc>Pendiente -41.2% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352078" lon="-4.810395">
-    <ele>982.9</ele>
-    <name>1130: -38.8%</name>
-    <desc>Pendiente -38.8% (umbral 20%)</desc>
-  </wpt>
-  <wpt lat="43.352066" lon="-4.810026">
-    <ele>979.6</ele>
-    <name>1133: -22.2%</name>
-    <desc>Pendiente -22.2% (umbral 20%)</desc>
+    <name>Tramo 1128: -36.3%</name>
+    <desc>Pendiente -36.3% en ventana de 8.8m (umbral 35%)</desc>
   </wpt>
 </gpx>

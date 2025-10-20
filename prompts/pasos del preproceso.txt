@@ -1,0 +1,24 @@
+- Resamplizar las grabaciones a 1 hz
+	- Eso no añade ruido y facilita el resto de procesos
+	
+- Depurar los tracks patrón
+    - Revisar el recorrido para que ajuste en plano al mapa
+    
+- Alinear tiempos de los tracks patrón
+	- Usar cross-correlation para alinear los patrones con las grabaciones
+	- Revisar manualmente atajos raros
+	
+- Resamplizar los tracks patrón a 1 hz
+    - Para que coincidan con las grabaciones
+    - No añade ruido y da dimensión estable para filtrado
+
+- Filtrar altura en tracks patrón con Salvistky-Golay 
+	- Checkear tracks patrón buscando pendientes anómalas
+	- Ventana deslizante de 10 m, pendiente > 35%
+	- Pasar filtro para suavizar esas pendientes
+	- Revisar mejora
+
+- Revisar velocidades anómalas en tracks patrón
+	- Caminando < 15 km/h
+	- Bicicleta < 60 km/h
+	
