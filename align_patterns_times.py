@@ -58,6 +58,21 @@ class AlignedPoint:
 
 
 @dataclass
+class InitialMatch:
+    """Represents the initial synchronization match between pattern and consensus."""
+    pattern_idx: int
+    consensus_idx: int
+    distance: float
+
+
+@dataclass
+class SearchWindow:
+    """Represents a search window for consensus points."""
+    start_idx: int
+    end_idx: int
+    
+
+@dataclass
 class SlidingWindow:
     """Represents a sliding window for efficient searching."""
     start_index: int
@@ -529,30 +544,24 @@ class PatternAligner:
         
         print(f"Loaded {len(consensus_points)} consensus points and {len(pattern_points)} pattern points")
         
-        # Create sliding windows for efficient searching
-        print("Creating sliding windows...")
-        consensus_windows, consensus_distances = self.create_sliding_windows(
-            consensus_points, pattern_points
-        )
+        # Use improved algorithm for finding matches
+        print("Finding matches with improved algorithm...")
+        matches = self.find_matches_with_improved_algorithm(pattern_points, consensus_points)
         
-        # Find closest consensus points for each pattern point
-        print("Finding closest consensus points...")
-        matches = []
-        
-        for i, pattern_point in enumerate(tqdm(pattern_points, desc="Matching points")):
-            result = self.find_closest_consensus_point(
-                pattern_point, consensus_points, consensus_windows,
-                consensus_distances, pattern_point.distance_from_start
-            )
-            
-            if result is not None:
-                consensus_idx, distance = result
-                matches.append((i, consensus_idx, distance))
+        if not matches:
+            print("No matches found with improved algorithm")
+            return False
         
         print(f"Found {len(matches)} initial matches")
+        print(f"Average distance: {np.mean([m[2] for m in matches]):.2f}m")
+        
+        # Remove duplicate consensus point matches
+        print("Removing duplicate consensus matches...")
+        matches = self.remove_duplicate_consensus_matches(matches)
+        print(f"After removing duplicates: {len(matches)} matches")
         
         # Filter matches by quality and distance
-        print("Filtering matches...")
+        print("Filtering matches by quality and distance...")
         filtered_matches = self.filter_by_quality_and_distance(matches, consensus_points)
         print(f"Retained {len(filtered_matches)} matches after filtering")
         
@@ -625,6 +634,244 @@ class PatternAligner:
         print(f"Successfully processed: {successful} pasadas")
         print(f"Failed: {failed} pasadas")
         print(f"Total: {len(pasadas)} pasadas")
+    
+    def find_initial_synchronization(self, pattern_points: List[PatternPoint], 
+                                   consensus_points: List[ConsensusPoint]) -> InitialMatch:
+        """Find the best initial synchronization between pattern and consensus tracks."""
+        print("Finding initial synchronization...")
+        
+        # Method 1: Start from first pattern point, find closest consensus point
+        first_pattern = pattern_points[0]
+        min_distance_1 = float('inf')
+        best_consensus_idx_1 = 0
+        
+        for i, consensus_point in enumerate(consensus_points):
+            distance = self.haversine_distance(
+                first_pattern.latitude, first_pattern.longitude,
+                consensus_point.latitude, consensus_point.longitude
+            )
+            if distance < min_distance_1:
+                min_distance_1 = distance
+                best_consensus_idx_1 = i
+            else:
+                # Assuming distance will only increase after closest point
+                break
+        
+        match_1 = InitialMatch(
+            pattern_idx=0,
+            consensus_idx=best_consensus_idx_1,
+            distance=min_distance_1
+        )
+        
+        # Method 2: Start from first consensus point, find closest pattern point
+        first_consensus = consensus_points[0]
+        min_distance_2 = float('inf')
+        best_pattern_idx_2 = 0
+        
+        for i, pattern_point in enumerate(pattern_points):
+            distance = self.haversine_distance(
+                first_consensus.latitude, first_consensus.longitude,
+                pattern_point.latitude, pattern_point.longitude
+            )
+            if distance < min_distance_2:
+                min_distance_2 = distance
+                best_pattern_idx_2 = i
+            else:
+                # Assuming distance will only increase after closest point
+                break
+        
+        match_2 = InitialMatch(
+            pattern_idx=best_pattern_idx_2,
+            consensus_idx=0,
+            distance=min_distance_2
+        )
+        
+        # Choose the best match (smallest distance)
+        if match_1.distance <= match_2.distance:
+            best_match = match_1
+        else:
+            best_match = match_2
+        
+        print(f"Initial synchronization: pattern[{best_match.pattern_idx}] <-> consensus[{best_match.consensus_idx}], distance: {best_match.distance:.2f}m")
+        
+        return best_match
+    
+    def calculate_consensus_distances(self, consensus_points: List[ConsensusPoint]) -> List[float]:
+        """Calculate cumulative distances along the consensus track."""
+        if not consensus_points:
+            return []
+        
+        distances = [0.0]
+        for i in range(1, len(consensus_points)):
+            dist = self.haversine_distance(
+                consensus_points[i-1].latitude, consensus_points[i-1].longitude,
+                consensus_points[i].latitude, consensus_points[i].longitude
+            )
+            distances.append(distances[-1] + dist)
+        
+        return distances
+    
+    def get_search_window(self, consensus_points: List[ConsensusPoint],
+                         consensus_distances: List[float],
+                         last_consensus_idx: int,
+                         pattern_distance_delta: float) -> SearchWindow:
+        """Get search window for consensus points based on pattern distance delta."""
+        # Minimum window size of 10 meters
+        window_distance = max(10.0, 1.5 * pattern_distance_delta)
+        
+        start_idx = last_consensus_idx
+        end_idx = len(consensus_points) - 1
+        
+        # Find end of window based on curvilinear distance
+        start_distance = consensus_distances[last_consensus_idx]
+        target_distance = start_distance + window_distance
+        
+        for i in range(last_consensus_idx, len(consensus_distances)):
+            if consensus_distances[i] >= target_distance:
+                end_idx = i
+                break
+        
+        return SearchWindow(start_idx=start_idx, end_idx=end_idx)
+    
+    def find_matches_with_improved_algorithm(self, pattern_points: List[PatternPoint],
+                                           consensus_points: List[ConsensusPoint]) -> List[Tuple[int, int, float]]:
+        """Find matches using the improved synchronization and search algorithm."""
+        # Calculate consensus distances
+        consensus_distances = self.calculate_consensus_distances(consensus_points)
+        
+        # Find initial synchronization
+        initial_match = self.find_initial_synchronization(pattern_points, consensus_points)
+        
+        matches = []
+        last_consensus_idx = initial_match.consensus_idx
+        
+        # Add the initial match
+        matches.append((initial_match.pattern_idx, initial_match.consensus_idx, initial_match.distance))
+        
+        # Process remaining pattern points starting from the synchronized position
+        for i in range(initial_match.pattern_idx + 1, len(pattern_points)):
+            # Calculate distance delta from previous pattern point
+            prev_pattern_point = pattern_points[i - 1]
+            current_pattern_point = pattern_points[i]
+            
+            pattern_distance_delta = self.haversine_distance(
+                prev_pattern_point.latitude, prev_pattern_point.longitude,
+                current_pattern_point.latitude, current_pattern_point.longitude
+            )
+            
+            # Get search window
+            window = self.get_search_window(
+                consensus_points, consensus_distances, 
+                last_consensus_idx, pattern_distance_delta
+            )
+            
+            # Find closest consensus point within the window
+            best_consensus_idx = None
+            min_distance = float('inf')
+            best_quality = 0.0
+            
+            for j in range(window.start_idx, min(window.end_idx + 1, len(consensus_points))):
+                consensus_point = consensus_points[j]
+                
+                # Calculate distance
+                distance = self.haversine_distance(
+                    current_pattern_point.latitude, current_pattern_point.longitude,
+                    consensus_point.latitude, consensus_point.longitude
+                )
+                
+                # Check if this is a better match (prioritize distance, then quality)
+                is_better = False
+                if distance < min_distance:
+                    is_better = True
+                elif abs(distance - min_distance) < 1.0:  # Very similar distances
+                    if consensus_point.quality_score > best_quality:
+                        is_better = True
+                
+                if is_better:
+                    min_distance = distance
+                    best_consensus_idx = j
+                    best_quality = consensus_point.quality_score
+            
+            if best_consensus_idx is not None:
+                matches.append((i, best_consensus_idx, min_distance))
+                last_consensus_idx = best_consensus_idx
+        
+        # Process pattern points before the initial synchronization point
+        last_consensus_idx = initial_match.consensus_idx
+        
+        for i in range(initial_match.pattern_idx - 1, -1, -1):
+            # Calculate distance delta from next pattern point
+            next_pattern_point = pattern_points[i + 1]
+            current_pattern_point = pattern_points[i]
+            
+            pattern_distance_delta = self.haversine_distance(
+                current_pattern_point.latitude, current_pattern_point.longitude,
+                next_pattern_point.latitude, next_pattern_point.longitude
+            )
+            
+            # For backward search, we look before the last consensus index
+            window_distance = max(10.0, 1.5 * pattern_distance_delta)
+            
+            start_idx = max(0, last_consensus_idx - int(window_distance / 10))  # Rough estimate
+            end_idx = last_consensus_idx
+            
+            # Find closest consensus point within the window
+            best_consensus_idx = None
+            min_distance = float('inf')
+            best_quality = 0.0
+            
+            for j in range(start_idx, end_idx + 1):
+                if j >= len(consensus_points):
+                    continue
+                    
+                consensus_point = consensus_points[j]
+                
+                # Calculate distance
+                distance = self.haversine_distance(
+                    current_pattern_point.latitude, current_pattern_point.longitude,
+                    consensus_point.latitude, consensus_point.longitude
+                )
+                
+                # Check if this is a better match
+                is_better = False
+                if distance < min_distance:
+                    is_better = True
+                elif abs(distance - min_distance) < 1.0:  # Very similar distances
+                    if consensus_point.quality_score > best_quality:
+                        is_better = True
+                
+                if is_better:
+                    min_distance = distance
+                    best_consensus_idx = j
+                    best_quality = consensus_point.quality_score
+            
+            if best_consensus_idx is not None:
+                matches.append((i, best_consensus_idx, min_distance))
+                last_consensus_idx = best_consensus_idx
+        
+        return matches
+    
+    def remove_duplicate_consensus_matches(self, matches: List[Tuple[int, int, float]]) -> List[Tuple[int, int, float]]:
+        """Remove duplicate consensus point matches, keeping the one with smallest distance."""
+        # Group matches by consensus index
+        consensus_groups = {}
+        for pattern_idx, consensus_idx, distance in matches:
+            if consensus_idx not in consensus_groups:
+                consensus_groups[consensus_idx] = []
+            consensus_groups[consensus_idx].append((pattern_idx, consensus_idx, distance))
+        
+        # For each consensus point, keep only the match with smallest distance
+        filtered_matches = []
+        for consensus_idx, group_matches in consensus_groups.items():
+            # Sort by distance and keep the best one
+            best_match = min(group_matches, key=lambda x: x[2])
+            filtered_matches.append(best_match)
+        
+        # Sort by pattern index to maintain order
+        filtered_matches.sort(key=lambda x: x[0])
+        
+        return filtered_matches
+    
 
 
 def main():
