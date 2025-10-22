@@ -1,0 +1,44 @@
+Trabajando sobre las pasadas resamplizadas a 1 hz, se necesita un script que sigua los siguientes pasos:
+
+-  Para cada pasada:
+	- obtener todas las grabaciones resamplizadas
+	- obtener el track patrón raw
+	
+	- para cada segundo de la duración total de las grabaciones
+		- obtener todas las posiciones (lat, lon, alt) de cada grabación en ese segundo
+		- con todas ellas, para ese segundo:
+			- despreciar outlayers
+			- calcular:
+				- la posición media (lat, lon, alt) 
+				- la desviación estándar (lat, lon, alt)
+			- computar un indicador de calidad de esa posición media
+	- crear un nuevo track <n>_consensus.gpx con
+		- las posiciones medias
+		- los tiempos comunes
+	- crear un CSV con <n>_consensus.csv con
+		- la info anterior, y
+		- la calidad del consenso en ese punto  	
+
+Indicaciones para el script:
+	- Llamarlo generate_consensus_track.py
+	- Debe leer los ficheros de grabaciones desde data/preprocessed/<pasada>/
+	- Debe leer el track patrón desde data/raw/<pasada>/<n>_pattern.gpx
+	- Debe guardar los resultados en data/preprocessed/<pasada>/
+  	- Usar formato GPX para el track consenso
+  	- Usar formato CSV para el fichero de datos
+  	- Usar UTC para los tiempos
+  	- Usar estructuras de datos adecuadas para manejar las posiciones y tiempos
+  	- Evitar cálculos innecesarios (optimizar tiempo de ejecución)
+  	- Manejar grandes volúmenes de datos (varias horas de grabación con muchos dispositivos)
+  	- Validar entradas (existencia de ficheros, formatos correctos, etc)
+  	- Incluir mensajes de progreso y resumen al finalizar
+	- Crear funciones con nombres significativos
+  	- Comentar el código
+  	- Usar librerías comunes (numpy, pandas, gpxpy, etc)
+  	- Evitar devolver muchos valores en las funciones, se prefiere usar estructuras con nombres significativos y contenidos autoexplicativos
+  	- Evitar listas largas de argumentos en las funciones, se prefiere usar estructuras con nombres significativos y contenidos autoexplicativos
+  	- Se sugiere usar clases si se considera adecuado
+  	- Se sugiere usar typing para los argumentos y valores de retorno de las funciones
+  	- Manejar errores comunes (ficheros no encontrados, datos corruptos, etc)
+
+			

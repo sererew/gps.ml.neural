@@ -1,5 +1,6 @@
 - Resamplizar las grabaciones a 1 hz
 	- Eso no añade ruido y facilita el resto de procesos
+	python resample_recordings.py
 	
 - Depurar los tracks patrón
     - Revisar el recorrido para que ajuste en plano al mapa
@@ -7,10 +8,12 @@
 - Alinear tiempos de los tracks patrón
 	- Usar cross-correlation para alinear los patrones con las grabaciones
 	- Revisar manualmente atajos raros
+	python align_pattern_times.py
 	
 - Resamplizar los tracks patrón a 1 hz
     - Para que coincidan con las grabaciones
     - No añade ruido y da dimensión estable para filtrado
+    python resample_patterns.py
 
 - Filtrar altura en tracks patrón con Salvistky-Golay 
 	- Checkear tracks patrón buscando pendientes anómalas
@@ -21,4 +24,10 @@
 - Revisar velocidades anómalas en tracks patrón
 	- Caminando < 15 km/h
 	- Bicicleta < 60 km/h
+
+- Sacar versiones acortadas de tracks patrón
+
+- Generar input data set
+	- Revisar cosas extrañas
 	
+- Crear la red y probar	

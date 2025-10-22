@@ -8,6 +8,6 @@ Tengo una estructura de carpetas de esta forma:
 			...
 En cada capeta de tercer nivel (llamémosla "pasada") hay varios ficheros <nombre>.GPX y uno cuyo nombre es <n>_pattern.gpx. Llamemos a este ultimo el track patrón.
 Cada "pasada" corresponde a un recorrido hecho en determinado momento siendo grabado simultáneamente con varios dispositivos GPS con configuraciones diversas. Se llama "grabación" al track grabad por cada uno de los dispositivos al ejecutar la "pasada".
-El track patrón contiene el recorrido realmemte hecho (limpio, sin distorsiones ni ruidos). Las grabaciones corresponden a lo que realmente grabaron los aparatos y contienen ruido de diversa índole.
+El track patrón contiene el recorrido realmente hecho (limpio, sin distorsiones ni ruidos). Las grabaciones corresponden a lo que realmente grabaron los aparatos y contienen ruido de diversa índole.
 Las grabaciones son imprecisas en posición, pero precisas en tiempo y hora (silmultáneas).
 El track patrón tiene precisión de posiciones pero no de tiempo. 

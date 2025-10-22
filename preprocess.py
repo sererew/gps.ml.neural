@@ -365,6 +365,7 @@ def process_pasada(pasada_dir):
 
     # Curvilínea de cada punto del patrón (en vértices)
     S_pp = []
+    
     # Si el patrón tiene muchos puntos, usamos la distancia acumulada exacta por vértices
     # (ya calculada en S_vertices); si quieres la curvilínea por cada punto (que ya coincide
     # con los vértices), es S_vertices:
@@ -378,6 +379,7 @@ def process_pasada(pasada_dir):
         if len(pts) < 2:
             print(f"[{base}] ⚠️ {os.path.basename(rp)}: menos de 2 puntos con tiempo.")
             continue
+        
         pts_res = resample_1hz(pts)
         resampled_tracks.append(pts_res)
         name = os.path.splitext(os.path.basename(rp))[0] + "_resampled"
