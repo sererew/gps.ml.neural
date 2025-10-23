@@ -94,9 +94,8 @@ class PatternAligner:
         self.preprocessed_path = self.base_data_path / "preprocessed"
         
         # Algorithm parameters
-        self.z_threshold = 1.0  # Aggressive Z-score threshold
-        self.quality_threshold = 0.5  # Minimum quality score
-        self.window_size_meters = 200.0  # Window size for searching
+        self.z_threshold = 2.0  # Z-score threshold
+        self.quality_threshold = 0.35  # Minimum quality score
         
     def validate_paths(self) -> bool:
         """Validate that required paths exist."""
@@ -204,44 +203,6 @@ class PatternAligner:
             print(f"Error loading pattern GPX {file_path}: {e}")
             return []
     
-    def create_sliding_windows(self, consensus_points: List[ConsensusPoint], 
-                             pattern_points: List[PatternPoint]) -> Tuple[List[SlidingWindow], List[float]]:
-        """Create sliding windows for consensus points based on distance."""
-        # Calculate cumulative distances for consensus points
-        consensus_distances = [0.0]
-        for i in range(1, len(consensus_points)):
-            dist = self.haversine_distance(
-                consensus_points[i-1].latitude, consensus_points[i-1].longitude,
-                consensus_points[i].latitude, consensus_points[i].longitude
-            )
-            consensus_distances.append(consensus_distances[-1] + dist)
-        
-        # Create windows
-        windows = []
-        for i, distance in enumerate(consensus_distances):
-            # Find window boundaries
-            start_dist = max(0, distance - self.window_size_meters / 2)
-            end_dist = distance + self.window_size_meters / 2
-            
-            # Find corresponding indices
-            start_idx = 0
-            end_idx = len(consensus_points) - 1
-            
-            for j, d in enumerate(consensus_distances):
-                if d >= start_dist and start_idx == 0:
-                    start_idx = j
-                if d <= end_dist:
-                    end_idx = j
-            
-            window = SlidingWindow(
-                start_index=start_idx,
-                end_index=end_idx,
-                center_distance=distance
-            )
-            windows.append(window)
-        
-        return windows, consensus_distances
-    
     def find_closest_consensus_point(self, pattern_point: PatternPoint,
                                    consensus_points: List[ConsensusPoint],
                                    consensus_windows: List[SlidingWindow],
@@ -280,7 +241,7 @@ class PatternAligner:
             is_better = False
             if distance < min_distance:
                 is_better = True
-            elif abs(distance - min_distance) < 1.0:  # Very similar distances
+            elif abs(distance - min_distance) < 1.0: # Very similar distances
                 if consensus_point.quality_score > best_quality:
                     is_better = True
             
@@ -640,12 +601,16 @@ class PatternAligner:
         """Find the best initial synchronization between pattern and consensus tracks."""
         print("Finding initial synchronization...")
         
-        # Method 1: Start from first pattern point, find closest consensus point
+        MAX_SEARCH_POINTS = 50  # Limit search to first 50 points
+        
+        # Method 1: Start from first pattern point, find closest consensus point within first 50 consensus points
         first_pattern = pattern_points[0]
         min_distance_1 = float('inf')
         best_consensus_idx_1 = 0
         
-        for i, consensus_point in enumerate(consensus_points):
+        search_limit_1 = min(MAX_SEARCH_POINTS, len(consensus_points))
+        for i in range(search_limit_1):
+            consensus_point = consensus_points[i]
             distance = self.haversine_distance(
                 first_pattern.latitude, first_pattern.longitude,
                 consensus_point.latitude, consensus_point.longitude
@@ -653,9 +618,6 @@ class PatternAligner:
             if distance < min_distance_1:
                 min_distance_1 = distance
                 best_consensus_idx_1 = i
-            else:
-                # Assuming distance will only increase after closest point
-                break
         
         match_1 = InitialMatch(
             pattern_idx=0,
@@ -663,12 +625,14 @@ class PatternAligner:
             distance=min_distance_1
         )
         
-        # Method 2: Start from first consensus point, find closest pattern point
+        # Method 2: Start from first consensus point, find closest pattern point within first 50 pattern points
         first_consensus = consensus_points[0]
         min_distance_2 = float('inf')
         best_pattern_idx_2 = 0
         
-        for i, pattern_point in enumerate(pattern_points):
+        search_limit_2 = min(MAX_SEARCH_POINTS, len(pattern_points))
+        for i in range(search_limit_2):
+            pattern_point = pattern_points[i]
             distance = self.haversine_distance(
                 first_consensus.latitude, first_consensus.longitude,
                 pattern_point.latitude, pattern_point.longitude
@@ -676,9 +640,6 @@ class PatternAligner:
             if distance < min_distance_2:
                 min_distance_2 = distance
                 best_pattern_idx_2 = i
-            else:
-                # Assuming distance will only increase after closest point
-                break
         
         match_2 = InitialMatch(
             pattern_idx=best_pattern_idx_2,
