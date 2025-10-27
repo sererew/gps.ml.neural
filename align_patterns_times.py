@@ -58,11 +58,38 @@ class AlignedPoint:
 
 
 @dataclass
+class Match:
+    """Represents a match between a pattern point and a consensus point."""
+    pattern_idx: int
+    consensus_idx: int
+    distance: float
+    quality_score: float = 0.0
+    
+    def __post_init__(self):
+        """Validate match data after initialization."""
+        if self.pattern_idx < 0 or self.consensus_idx < 0:
+            raise ValueError("Indices must be non-negative")
+        if self.distance < 0:
+            raise ValueError("Distance must be non-negative")
+        if not 0 <= self.quality_score <= 1:
+            self.quality_score = max(0.0, min(1.0, self.quality_score))
+
+
+@dataclass
 class InitialMatch:
     """Represents the initial synchronization match between pattern and consensus."""
     pattern_idx: int
     consensus_idx: int
     distance: float
+    
+    def to_match(self, quality_score: float = 0.0) -> Match:
+        """Convert to a regular Match object."""
+        return Match(
+            pattern_idx=self.pattern_idx,
+            consensus_idx=self.consensus_idx,
+            distance=self.distance,
+            quality_score=quality_score
+        )
 
 
 @dataclass
@@ -285,22 +312,22 @@ class PatternAligner:
         return filtered_matches
     
     def interpolate_timestamps(self, pattern_points: List[PatternPoint],
-                             matches: List[Tuple[int, int, float]],
+                             matches: List[Match],
                              consensus_points: List[ConsensusPoint]) -> List[AlignedPoint]:
         """Interpolate timestamps for all pattern points."""
         aligned_points = [None] * len(pattern_points)
         
         # First, assign direct matches
-        for pattern_idx, consensus_idx, distance in matches:
-            consensus_point = consensus_points[consensus_idx]
-            aligned_points[pattern_idx] = AlignedPoint(
-                latitude=pattern_points[pattern_idx].latitude,
-                longitude=pattern_points[pattern_idx].longitude,
-                elevation=pattern_points[pattern_idx].elevation,
+        for match in matches:
+            consensus_point = consensus_points[match.consensus_idx]
+            aligned_points[match.pattern_idx] = AlignedPoint(
+                latitude=pattern_points[match.pattern_idx].latitude,
+                longitude=pattern_points[match.pattern_idx].longitude,
+                elevation=pattern_points[match.pattern_idx].elevation,
                 timestamp=consensus_point.timestamp,
                 quality_score=consensus_point.quality_score,
                 assignment_method='direct',
-                distance_to_consensus=distance
+                distance_to_consensus=match.distance
             )
         
         # Now interpolate/extrapolate for missing points
@@ -341,7 +368,7 @@ class PatternAligner:
                 timestamp = self.extrapolate_from_point(
                     pattern_points, aligned_points, i, left_idx, forward=True
                 )
-                method = 'extrapolated'
+                method = 'extrapolated at end'
                 quality = aligned_points[left_idx].quality_score * 0.5
             
             elif right_idx is not None:
@@ -349,7 +376,7 @@ class PatternAligner:
                 timestamp = self.extrapolate_from_point(
                     pattern_points, aligned_points, i, right_idx, forward=False
                 )
-                method = 'extrapolated'
+                method = 'extrapolated at begining'
                 quality = aligned_points[right_idx].quality_score * 0.5
             
             else:
@@ -507,14 +534,14 @@ class PatternAligner:
         
         # Use improved algorithm for finding matches
         print("Finding matches with improved algorithm...")
-        matches = self.find_matches_with_improved_algorithm(pattern_points, consensus_points)
+        matches = self.find_matches(pattern_points, consensus_points)
         
         if not matches:
             print("No matches found with improved algorithm")
             return False
         
         print(f"Found {len(matches)} initial matches")
-        print(f"Average distance: {np.mean([m[2] for m in matches]):.2f}m")
+        print(f"Average distance: {np.mean([m.distance for m in matches]):.2f}m")
         
         # Remove duplicate consensus point matches
         print("Removing duplicate consensus matches...")
@@ -523,7 +550,7 @@ class PatternAligner:
         
         # Filter matches by quality and distance
         print("Filtering matches by quality and distance...")
-        filtered_matches = self.filter_by_quality_and_distance(matches, consensus_points)
+        filtered_matches = self.filter_matches_by_quality_and_distance(matches, consensus_points)
         print(f"Retained {len(filtered_matches)} matches after filtering")
         
         if not filtered_matches:
@@ -678,7 +705,8 @@ class PatternAligner:
                          pattern_distance_delta: float) -> SearchWindow:
         """Get search window for consensus points based on pattern distance delta."""
         # Minimum window size of 10 meters
-        window_distance = max(10.0, 1.5 * pattern_distance_delta)
+        #window_distance = max(10.0, 1.5 * pattern_distance_delta)
+        window_distance = 100.0  # Cap window size to 100 meters for efficiency
         
         start_idx = last_consensus_idx
         end_idx = len(consensus_points) - 1
@@ -694,8 +722,8 @@ class PatternAligner:
         
         return SearchWindow(start_idx=start_idx, end_idx=end_idx)
     
-    def find_matches_with_improved_algorithm(self, pattern_points: List[PatternPoint],
-                                           consensus_points: List[ConsensusPoint]) -> List[Tuple[int, int, float]]:
+    def find_matches(self, pattern_points: List[PatternPoint],
+                                           consensus_points: List[ConsensusPoint]) -> List[Match]:
         """Find matches using the improved synchronization and search algorithm."""
         # Calculate consensus distances
         consensus_distances = self.calculate_consensus_distances(consensus_points)
@@ -706,8 +734,9 @@ class PatternAligner:
         matches = []
         last_consensus_idx = initial_match.consensus_idx
         
-        # Add the initial match
-        matches.append((initial_match.pattern_idx, initial_match.consensus_idx, initial_match.distance))
+        # Add the initial match - convert to Match object
+        initial_consensus_point = consensus_points[initial_match.consensus_idx]
+        matches.append(initial_match.to_match(initial_consensus_point.quality_score))
         
         # Process remaining pattern points starting from the synchronized position
         for i in range(initial_match.pattern_idx + 1, len(pattern_points)):
@@ -754,86 +783,66 @@ class PatternAligner:
                     best_quality = consensus_point.quality_score
             
             if best_consensus_idx is not None:
-                matches.append((i, best_consensus_idx, min_distance))
-                last_consensus_idx = best_consensus_idx
-        
-        # Process pattern points before the initial synchronization point
-        last_consensus_idx = initial_match.consensus_idx
-        
-        for i in range(initial_match.pattern_idx - 1, -1, -1):
-            # Calculate distance delta from next pattern point
-            next_pattern_point = pattern_points[i + 1]
-            current_pattern_point = pattern_points[i]
-            
-            pattern_distance_delta = self.haversine_distance(
-                current_pattern_point.latitude, current_pattern_point.longitude,
-                next_pattern_point.latitude, next_pattern_point.longitude
-            )
-            
-            # For backward search, we look before the last consensus index
-            window_distance = max(10.0, 1.5 * pattern_distance_delta)
-            
-            start_idx = max(0, last_consensus_idx - int(window_distance / 10))  # Rough estimate
-            end_idx = last_consensus_idx
-            
-            # Find closest consensus point within the window
-            best_consensus_idx = None
-            min_distance = float('inf')
-            best_quality = 0.0
-            
-            for j in range(start_idx, end_idx + 1):
-                if j >= len(consensus_points):
-                    continue
-                    
-                consensus_point = consensus_points[j]
-                
-                # Calculate distance
-                distance = self.haversine_distance(
-                    current_pattern_point.latitude, current_pattern_point.longitude,
-                    consensus_point.latitude, consensus_point.longitude
+                match = Match(
+                    pattern_idx=i,
+                    consensus_idx=best_consensus_idx,
+                    distance=min_distance,
+                    quality_score=best_quality
                 )
-                
-                # Check if this is a better match
-                is_better = False
-                if distance < min_distance:
-                    is_better = True
-                elif abs(distance - min_distance) < 1.0:  # Very similar distances
-                    if consensus_point.quality_score > best_quality:
-                        is_better = True
-                
-                if is_better:
-                    min_distance = distance
-                    best_consensus_idx = j
-                    best_quality = consensus_point.quality_score
-            
-            if best_consensus_idx is not None:
-                matches.append((i, best_consensus_idx, min_distance))
+                matches.append(match)
                 last_consensus_idx = best_consensus_idx
         
         return matches
     
-    def remove_duplicate_consensus_matches(self, matches: List[Tuple[int, int, float]]) -> List[Tuple[int, int, float]]:
+    def remove_duplicate_consensus_matches(self, matches: List[Match]) -> List[Match]:
         """Remove duplicate consensus point matches, keeping the one with smallest distance."""
         # Group matches by consensus index
         consensus_groups = {}
-        for pattern_idx, consensus_idx, distance in matches:
-            if consensus_idx not in consensus_groups:
-                consensus_groups[consensus_idx] = []
-            consensus_groups[consensus_idx].append((pattern_idx, consensus_idx, distance))
+        for match in matches:
+            if match.consensus_idx not in consensus_groups:
+                consensus_groups[match.consensus_idx] = []
+            consensus_groups[match.consensus_idx].append(match)
         
         # For each consensus point, keep only the match with smallest distance
         filtered_matches = []
         for consensus_idx, group_matches in consensus_groups.items():
             # Sort by distance and keep the best one
-            best_match = min(group_matches, key=lambda x: x[2])
+            best_match = min(group_matches, key=lambda x: x.distance)
             filtered_matches.append(best_match)
         
         # Sort by pattern index to maintain order
-        filtered_matches.sort(key=lambda x: x[0])
+        filtered_matches.sort(key=lambda x: x.pattern_idx)
         
         return filtered_matches
     
-
+    def filter_matches_by_quality_and_distance(self, matches: List[Match],
+                                              consensus_points: List[ConsensusPoint]) -> List[Match]:
+        """Filter matches by quality score and distance using Z-score."""
+        if len(matches) < 3:  # Need at least 3 points for Z-score
+            return [m for m in matches if consensus_points[m.consensus_idx].quality_score >= self.quality_threshold]
+        
+        # Extract distances and calculate Z-scores
+        distances = np.array([m.distance for m in matches])
+        distance_mean = np.mean(distances)
+        distance_std = np.std(distances)
+        
+        filtered_matches = []
+        for match in matches:
+            consensus_point = consensus_points[match.consensus_idx]
+            
+            # Check quality score
+            if consensus_point.quality_score < self.quality_threshold:
+                continue
+            
+            # Check distance Z-score
+            if distance_std > 0:
+                z_score = abs((match.distance - distance_mean) / distance_std)
+                if z_score > self.z_threshold:
+                    continue
+            
+            filtered_matches.append(match)
+        
+        return filtered_matches
 
 def main():
     """Main function."""
