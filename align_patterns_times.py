@@ -64,6 +64,7 @@ class Match:
     consensus_idx: int
     distance: float
     quality_score: float = 0.0
+    is_fixed: bool = False  # Whether this match is manually fixed and should not be filtered out
     
     def __post_init__(self):
         """Validate match data after initialization."""
@@ -105,6 +106,22 @@ class SlidingWindow:
     start_index: int
     end_index: int
     center_distance: float  # Distance from start of track
+
+
+@dataclass
+class FixedMatch:
+    """Represents a manually fixed match between pattern and consensus points."""
+    pattern_idx: int
+    consensus_idx: int
+    
+    def to_match(self, distance: float, quality_score: float) -> Match:
+        """Convert to a regular Match object."""
+        return Match(
+            pattern_idx=self.pattern_idx,
+            consensus_idx=self.consensus_idx,
+            distance=distance,
+            quality_score=quality_score
+        )
 
 
 class PatternAligner:
@@ -200,6 +217,35 @@ class PatternAligner:
             
         except Exception as e:
             print(f"Error loading consensus CSV {file_path}: {e}")
+            return []
+    
+    def load_fixed_matches(self, file_path: Path) -> List[FixedMatch]:
+        """Load fixed matches from CSV file.
+        
+        The CSV file should have two columns: pattern_idx, consensus_idx
+        Each row represents a manually fixed match between pattern and consensus points.
+        """
+        fixed_matches = []
+        
+        if not file_path.exists():
+            return fixed_matches
+        
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                
+                for row in reader:
+                    fixed_match = FixedMatch(
+                        pattern_idx=int(row['pattern_idx']),
+                        consensus_idx=int(row['consensus_idx'])
+                    )
+                    fixed_matches.append(fixed_match)
+            
+            print(f"Loaded {len(fixed_matches)} fixed matches from {file_path}")
+            return fixed_matches
+            
+        except Exception as e:
+            print(f"Error loading fixed matches CSV {file_path}: {e}")
             return []
     
     def load_pattern_gpx(self, file_path: Path) -> List[PatternPoint]:
@@ -311,9 +357,10 @@ class PatternAligner:
         
         return filtered_matches
     
-    def interpolate_timestamps(self, pattern_points: List[PatternPoint],
-                             matches: List[Match],
-                             consensus_points: List[ConsensusPoint]) -> List[AlignedPoint]:
+    def interpolate_timestamps(self, 
+                            pattern_points: List[PatternPoint],
+                            matches: List[Match],
+                            consensus_points: List[ConsensusPoint]) -> List[AlignedPoint]:
         """Interpolate timestamps for all pattern points."""
         aligned_points = [None] * len(pattern_points)
         
@@ -506,6 +553,7 @@ class PatternAligner:
         # Define file paths
         consensus_csv_path = self.preprocessed_path / pasada / f"{pasada}_consensus.csv"
         pattern_gpx_path = self.raw_path / pasada / f"{pasada}_pattern.gpx"
+        fixed_matches_csv_path = self.preprocessed_path / pasada / f"{pasada}_fixed_matches.csv"
         output_gpx_path = self.preprocessed_path / pasada / f"{pasada}_aligned_pattern.gpx"
         
         # Check if input files exist
@@ -530,14 +578,18 @@ class PatternAligner:
             print("Failed to load pattern data")
             return False
         
-        print(f"Loaded {len(consensus_points)} consensus points and {len(pattern_points)} pattern points")
+        # Load fixed matches (optional)
+        print("Loading fixed matches...")
+        fixed_matches = self.load_fixed_matches(fixed_matches_csv_path)
         
-        # Use improved algorithm for finding matches
+        print(f"Loaded {len(consensus_points)} consensus points, {len(pattern_points)} pattern points and {len(fixed_matches)} fixed matches")
+
+        # Use improved algorithm for finding matches with fixed matches support
         print("Finding matches with improved algorithm...")
-        matches = self.find_matches(pattern_points, consensus_points)
+        matches = self.find_matches(pattern_points, consensus_points, fixed_matches)
         
         if not matches:
-            print("No matches found with improved algorithm")
+            print("No matches found")
             return False
         
         print(f"Found {len(matches)} initial matches")
@@ -722,24 +774,92 @@ class PatternAligner:
         
         return SearchWindow(start_idx=start_idx, end_idx=end_idx)
     
-    def find_matches(self, pattern_points: List[PatternPoint],
-                                           consensus_points: List[ConsensusPoint]) -> List[Match]:
-        """Find matches using the improved synchronization and search algorithm."""
+    def find_matches(self, 
+                     pattern_points: List[PatternPoint],
+                     consensus_points: List[ConsensusPoint],
+                     fixed_matches: List[FixedMatch] = None) -> List[Match]:
+        """
+            Find matches using the synchronization and search algorithm 
+            with support for fixed matches.
+        """
+        # Create a lookup dictionary for fixed matches
+        fixed_matches_dict = {}
+        if fixed_matches:
+            for fixed_match in fixed_matches:
+                fixed_matches_dict[fixed_match.pattern_idx] = fixed_match
+            print(f"Using {len(fixed_matches)} fixed matches for manual resynchronization")
+        
         # Calculate consensus distances
         consensus_distances = self.calculate_consensus_distances(consensus_points)
         
-        # Find initial synchronization
-        initial_match = self.find_initial_synchronization(pattern_points, consensus_points)
+        # Find initial synchronization (unless overridden by fixed match)
+        if 0 in fixed_matches_dict:
+            # Use fixed match for initial synchronization
+            fixed_match = fixed_matches_dict[0]
+            initial_match = InitialMatch(
+                pattern_idx=fixed_match.pattern_idx,
+                consensus_idx=fixed_match.consensus_idx,
+                distance=0.0  # Distance will be calculated below
+            )
+            # Calculate actual distance
+            pattern_point = pattern_points[fixed_match.pattern_idx]
+            consensus_point = consensus_points[fixed_match.consensus_idx]
+            distance = self.haversine_distance(
+                pattern_point.latitude, pattern_point.longitude,
+                consensus_point.latitude, consensus_point.longitude
+            )
+            initial_match.distance = distance
+            print(f"Using fixed match for initial synchronization: pattern[{initial_match.pattern_idx}] <-> consensus[{initial_match.consensus_idx}], distance: {initial_match.distance:.2f}m")
+        else:
+            initial_match = self.find_initial_synchronization(pattern_points, consensus_points)
         
         matches = []
         last_consensus_idx = initial_match.consensus_idx
         
-        # Add the initial match - convert to Match object
+        # Add the initial match - convert to Match object and mark if it's fixed
         initial_consensus_point = consensus_points[initial_match.consensus_idx]
-        matches.append(initial_match.to_match(initial_consensus_point.quality_score))
+        initial_match_obj = initial_match.to_match(initial_consensus_point.quality_score)
+        # Mark if this is a fixed match
+        if 0 in fixed_matches_dict:
+            initial_match_obj.is_fixed = True
+        else:
+            initial_match_obj.is_fixed = False
+        matches.append(initial_match_obj)
         
         # Process remaining pattern points starting from the synchronized position
         for i in range(initial_match.pattern_idx + 1, len(pattern_points)):
+            # Check if this pattern point has a fixed match
+            if i in fixed_matches_dict:
+                fixed_match = fixed_matches_dict[i]
+                
+                # PRECAUTION 1: Remove previous matches that have consensus points after this fixed match
+                # This prevents conflicts when a fixed match forces a "backwards" resynchronization
+                matches_to_keep = []
+                for existing_match in matches:
+                    if existing_match.consensus_idx <= fixed_match.consensus_idx:
+                        matches_to_keep.append(existing_match)
+                    else:
+                        print(f"Removing conflicting match: pattern[{existing_match.pattern_idx}] <-> consensus[{existing_match.consensus_idx}] (after fixed consensus[{fixed_match.consensus_idx}])")
+                
+                matches = matches_to_keep
+                
+                # Calculate distance for the fixed match
+                pattern_point = pattern_points[i]
+                consensus_point = consensus_points[fixed_match.consensus_idx]
+                distance = self.haversine_distance(
+                    pattern_point.latitude, pattern_point.longitude,
+                    consensus_point.latitude, consensus_point.longitude
+                )
+                
+                # Create match from fixed match and mark it as fixed
+                match = fixed_match.to_match(distance, consensus_point.quality_score)
+                match.is_fixed = True  # PRECAUTION 2: Mark as fixed to prevent removal during filtering
+                matches.append(match)
+                last_consensus_idx = fixed_match.consensus_idx
+                print(f"Applied fixed match: pattern[{i}] <-> consensus[{fixed_match.consensus_idx}], distance: {distance:.2f}m")
+                continue
+            
+            # Regular algorithm for non-fixed points
             # Calculate distance delta from previous pattern point
             prev_pattern_point = pattern_points[i - 1]
             current_pattern_point = pattern_points[i]
@@ -773,9 +893,9 @@ class PatternAligner:
                 is_better = False
                 if distance < min_distance:
                     is_better = True
-                elif abs(distance - min_distance) < 1.0:  # Very similar distances
-                    if consensus_point.quality_score > best_quality:
-                        is_better = True
+#                elif abs(distance - min_distance) < 1.0:  # Very similar distances
+#                    if consensus_point.quality_score > best_quality:
+#                        is_better = True
                 
                 if is_better:
                     min_distance = distance
@@ -789,6 +909,7 @@ class PatternAligner:
                     distance=min_distance,
                     quality_score=best_quality
                 )
+                match.is_fixed = False  # Mark as non-fixed
                 matches.append(match)
                 last_consensus_idx = best_consensus_idx
         
@@ -817,19 +938,35 @@ class PatternAligner:
     
     def filter_matches_by_quality_and_distance(self, matches: List[Match],
                                               consensus_points: List[ConsensusPoint]) -> List[Match]:
-        """Filter matches by quality score and distance using Z-score."""
+        """Filter matches by quality score and distance using Z-score, but preserve fixed matches."""
         if len(matches) < 3:  # Need at least 3 points for Z-score
-            return [m for m in matches if consensus_points[m.consensus_idx].quality_score >= self.quality_threshold]
+            # For small sets, only filter by quality but preserve fixed matches
+            filtered = []
+            for m in matches:
+                if m.is_fixed or consensus_points[m.consensus_idx].quality_score >= self.quality_threshold:
+                    filtered.append(m)
+            return filtered
         
-        # Extract distances and calculate Z-scores
-        distances = np.array([m.distance for m in matches])
-        distance_mean = np.mean(distances)
-        distance_std = np.std(distances)
+        # Extract distances and calculate Z-scores (only from non-fixed matches for statistics)
+        non_fixed_distances = [m.distance for m in matches if not m.is_fixed]
+        
+        if len(non_fixed_distances) > 0:
+            distance_mean = np.mean(non_fixed_distances)
+            distance_std = np.std(non_fixed_distances)
+        else:
+            # If all matches are fixed, don't filter any
+            return matches
         
         filtered_matches = []
         for match in matches:
             consensus_point = consensus_points[match.consensus_idx]
             
+            # PRECAUTION 2: Always keep fixed matches regardless of quality or distance
+            if match.is_fixed:
+                filtered_matches.append(match)
+                continue
+            
+            # For non-fixed matches, apply normal filtering
             # Check quality score
             if consensus_point.quality_score < self.quality_threshold:
                 continue
