@@ -1,19 +1,23 @@
 - Resamplizar las grabaciones a 1 hz
 	- Eso no añade ruido y facilita el resto de procesos
-	python resample_recordings.py
+	python 1_resample_recordings.py
 	
+- Generar el track consenso por pasada
+    python 2_generate_consensus_tracks.py
+    
 - Depurar los tracks patrón
     - Revisar el recorrido para que ajuste en plano al mapa
     
 - Alinear tiempos de los tracks patrón
+	- Contra los tiempos del track consenso de cada pasada
 	- Usar cross-correlation para alinear los patrones con las grabaciones
 	- Revisar manualmente atajos raros
-	python align_pattern_times.py
+	python 3_align_pattern_times.py
 	
 - Resamplizar los tracks patrón a 1 hz
     - Para que coincidan con las grabaciones
     - No añade ruido y da dimensión estable para filtrado
-    python resample_patterns.py
+    python 4_resample_patterns.py
 
 - Filtrar altura en tracks patrón con Salvistky-Golay 
 	- Checkear tracks patrón buscando pendientes anómalas

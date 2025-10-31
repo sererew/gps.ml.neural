@@ -6,18 +6,18 @@ Resamplea a 1 Hz los tracks patrón alineados de cada pasada.
 
 Estructura esperada:
 data/
-  raw/
+  preprocessed/
     <pasada>/
       <grabacion1>.gpx
       <grabacion2>.gpx
       ...
-      <n>_pattern_aligned.gpx
+      <n>_aligned_pattern.gpx
 
 Salida:
 data/
   preprocessed/
     <pasada>/
-      <n>_pattern_aligned_resampled.gpx
+      <n>_aligned_pattern_resampled.gpx
 """
 
 import os
@@ -123,9 +123,9 @@ def process_pasada(pasada_dir):
     print(f"\n🔹 Procesando pasada: {base}")
     os.makedirs(os.path.join(PRE_DIR, base), exist_ok=True)
 
-    pattern_files = glob.glob(os.path.join(pasada_dir, "*_pattern_aligned.gpx"))
+    pattern_files = glob.glob(os.path.join(pasada_dir, "*_aligned_pattern.gpx"))
     if not pattern_files:
-        print(f"[{base}] ⚠️ No se encontró *_pattern_aligned.gpx")
+        print(f"[{base}] ⚠️ No se encontró *_aligned_pattern.gpx")
         return
     trp_path = pattern_files[0]
 
