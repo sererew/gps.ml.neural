@@ -1,0 +1,73 @@
+{
+  "mode": "fast",
+  "config": {
+    "epochs": 10,
+    "batch_size": 16,
+    "learning_rate": 0.001,
+    "patience": 5
+  },
+  "lofo_validation": {
+    "individual_results": {
+      "1": {
+        "mae_dx_norm": 0.20875779442603956,
+        "mae_dy_norm": 0.2080089385686526,
+        "mae_dz_norm": 0.5116503864247147,
+        "mae_total_norm": 0.3094723731398023,
+        "mae_dx_meters": 0.3493975945522568,
+        "mae_dy_meters": 0.3796106332700907,
+        "mae_dz_meters": 0.15993622094982854,
+        "mae_total_meters": 0.29631481625739203
+      },
+      "10": {
+        "mae_dx_norm": 0.17306387072929802,
+        "mae_dy_norm": 0.15270791604118278,
+        "mae_dz_norm": 0.1629869474564536,
+        "mae_total_norm": 0.1629195780756448,
+        "mae_dx_meters": 0.28965672495721845,
+        "mae_dy_meters": 0.2786877673828415,
+        "mae_dz_meters": 0.05094790636357092,
+        "mae_total_meters": 0.206430799567877
+      },
+      "11": {
+        "mae_dx_norm": 0.18137089080402033,
+        "mae_dy_norm": 0.1368554769929213,
+        "mae_dz_norm": 0.18479544608387405,
+        "mae_total_norm": 0.16767393796027188,
+        "mae_dx_meters": 0.3035601683302552,
+        "mae_dy_meters": 0.24975749850791085,
+        "mae_dz_meters": 0.05776500014286488,
+        "mae_total_meters": 0.20369422232701032
+      }
+    },
+    "summary": {
+      "families_tested": 3,
+      "mae_total_mean": 0.2133552963919063,
+      "mae_total_std": 0.06799274626212629,
+      "mae_dx_mean": 0.18773085198645265,
+      "mae_dx_std": 0.015250155778411711,
+      "mae_dy_mean": 0.16585744386758558,
+      "mae_dy_std": 0.03050012388057108,
+      "mae_dz_mean": 0.28647759332168077,
+      "mae_dz_std": 0.15946994015270682
+    }
+  },
+  "final_model": {
+    "training_time_minutes": 5.425916377703349,
+    "metrics": {
+      "mae_dx_norm": 0.29560856417527526,
+      "mae_dy_norm": 0.26524173155110997,
+      "mae_dz_norm": 0.3969741471833152,
+      "mae_total_norm": 0.3192748143032335,
+      "mae_dx_meters": 0.4947595823604535,
+      "mae_dy_meters": 0.484058917348516,
+      "mae_dz_meters": 0.12408970380752052,
+      "mae_total_meters": 0.36763606783883
+    },
+    "config": {
+      "epochs": 10,
+      "batch_size": 16,
+      "learning_rate": 0.001,
+      "patience": 5
+    }
+  }
+}

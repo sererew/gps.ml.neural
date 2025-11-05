@@ -168,9 +168,11 @@ def pass1_stats():
         trp_idx=build_time_index(trp_pts)
         recs=[p for p in glob.glob(os.path.join(pdir,"*_resampled.gpx"))
               if os.path.basename(p)!=os.path.basename(trp_path)]
+        
         for rp in recs:
             rec_pts=read_gpx_points(rp)
             if len(rec_pts)<2: continue
+            
             rec_idx=build_time_index(rec_pts)
             t0,t1=common_time_range(trp_idx,rec_idx)
             if t0 is None: continue
