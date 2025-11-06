@@ -28,7 +28,7 @@ Desarrollar un sistema de **filtrado de tracks GPS** que, **dado cualquier track
    - Calculada sobre todas las grabaciones: `mean` y `std` por componente
    - Guardada en `norm_stats.json` para desnormalización posterior
 
-## 4️⃣ Arquitectura de la Red Neuronal (implementada)
+## 4️⃣ Arquitectura de la Red Neuronal (implementada en script 6)
 **Red como filtro secuencia-a-secuencia**:
 * **Entrada**: `[batch, time, 3]` donde `3 = [dx, dy, dz]` normalizados del track ruidoso
 * **Salida**: `[batch, time, 3]` donde `3 = [dx_filtrado, dy_filtrado, dz_filtrado]`
@@ -45,7 +45,7 @@ Desarrollar un sistema de **filtrado de tracks GPS** que, **dado cualquier track
 - **Callbacks**: EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 - **Métricas**: MAE en valores normalizados y convertidos a metros reales
 
-## 5️⃣ Validación LOFO (Leave-One-Family-Out) - Implementada
+## 5️⃣ Validación LOFO (Leave-One-Family-Out) - (implementada script 6)
 **Reagrupación automática de familias**:
 - **Familia 4**: Incluye automáticamente `['4', '4b', '4c', '4d']` 
 - **Familia 15**: Incluye automáticamente `['15', '15a', '15b', '15c', '15d']`

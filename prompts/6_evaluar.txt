@@ -1,0 +1,54 @@
+	- Lee el plan del proyecto
+	- Ya está hecha el entreno de la red. Lee el script 6
+	- Analiza los ficheros json de salida del script, adjuntos
+	
+Ahora necesitamos comparar la salida con la de otros filtros. Pero vayamos paso a paso.
+
+	- 1) Se necesita un script que tome un track y lo filtre usando la red neuronal generada y lo deje en una ruta indicada. El track ya esta samplizado a 1 hz. Se usarán los parámetros de normalización de la red entrenada. El proceso será:
+			- calcular deltas
+			- normalizar
+			- pasar por la red generada
+			- renegerar puntos a coordenadas y altura
+			- guardar como GPX filtrado
+			
+	- 2) Generar otros scripts de filtro. Todos ellos tomarán un track de entrada y generan una salida. Los tracks estarán samplizados a 1 hz.
+		- Filtros a implementar:
+			- Identity (lo que entra sale)
+			- Media móvil
+			- Media ponderada triangular
+			- Mediana móvil
+			- Saviztky-Golay 
+			- Exponential
+			- <otras_sugerencias_tuyas>
+	
+	- 3) Script que aplique todos los filtros a todas las pasadas
+		- Los tracks a procesar estarán en data/preprocessed/<pasada> (samplizados a 1 hz)
+		- Los resultados estarán en data/filtered/<pasada>/<filter_name> mismo nombre
+		- La red neuronal es otro filtro más "nn" puede ser su nombre
+			
+	- 4) Comparar los tracks filtrados:
+		- Los tracks patrón están samplizados a 1 hz y disponibles en data/preprocessed/<pasada> con el nombre <pasada>_aligned_pattern_resampled.gpx
+		- Para cada track en data/filtered se generará una fila en Excel con el siguiente contenido:
+			- track_name
+			- total_points
+			- total_pattern_length
+			- total_pattern_elevation_gain
+			- total_pattern_elevation_loss
+			- total_pattern_elevation_gain_threshold
+			- total_pattern_elevation_loss_threshold
+			- Por cada filtro (deviation con respecto al patrón):
+				- total_length_deviation
+				- total_elevation_gain_deviation
+				- total_elevation_loss_deviation
+				- total_elevation_gain_deviation_threshold
+				- total_elevation_loss_deviation_threshold
+				- mean_point_deviation (3D)
+				- std_point_deviation (3D)
+				
+			deviation = valor_filtro - valor_patrón
+				
+		Siendo threshold Umbrales:
+				- aumento mínimo de altitud: 5 m
+				- vel minima de movimiento: 1 km/h
+				- distancia para pendientes: 50 m
+
