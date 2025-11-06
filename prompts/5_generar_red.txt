@@ -1,0 +1,53 @@
+	Lee el plan del proyecto. Estamos en los puntos 4 y 5.
+
+	siguiente paso: ahora se va a entrenar una red neuronal cuya:
+		- entrada será [batch, features, time]
+			Donde:
+			- batch: serán fragmentos de las grabaciones que tenemos de longitud 3600 puntos (1 hora) (en tracks más cortos se paddea con ceros)
+			- features: serán d(x), d(y), d(z) (delta) obtenidos de las diferencas en cada eje del punto p con respecto a p-1
+			- time: cada uno de los puntos de las grabaciones resampleadas
+			
+		 - salida será [batch, features, time]
+			Donde:
+			- features será la predicción que haga la red
+			- batch y time lo mismo que a la entrada
+			
+		- labels será [batch, features, time]
+			Donde:
+			- batch fragmentos del tracks patrón que corresponda a la grabación alineado
+			- features los mismo para calculado sobre el fragmento del track patrón
+			- time el mismo (base de tiempos común a entrada, salida y labels)
+			
+		Es decir, se prentende que la red aprenda a detectar ruido y compensarlo devolviendo puntos corregidos. Es decir, un track corregido. Sobre este se espera calcular distancia total, desnivel acumulado positivo y desnivel acumulado negativo.
+		
+		Cosas a tener en cuenta:
+		Los datos de entrada han sido generados por un script con esta especificación:
+		"""
+		Genera dataset para entrenamiento de la red:
+			- Lee data/preprocessed/<pasada> con:
+				- <n>_pattern_aligned_resampled.gpx  (patrón limpio 1 Hz)
+				- <grabacion>_resampled.gpx          (grabaciones 1 Hz)
+			- Sincroniza grabaciones con el patrón por rango de tiempos común.
+			- Convierte lat/lon/(ele) -> (x,y,z) locales (m).
+			- Calcula deltas (dx,dy,dz).
+			- Ventanas de 3600 s (1h) con solape de 1800 s (media hora).
+			- Padding con ceros y máscara binaria.
+			- Normalización global (media/STD sobre todas las grabaciones).
+			- Guarda CSVs en:
+				  data/input/slices/
+				  data/input/labels/
+				  data/input/masks/
+			- Crea data/input/norm_stats.json y data/input/manifest.csv
+		"""
+		
+		Sobre la red:
+			- LSTM (128) -> densa(64) -> output(3)
+			- return_sequences=True en la LSTM, para producir salida por timestep.
+			- Función de pérdida sobre cada dx, dy, dz (vectorial)
+			- Funciones de activación densa(64) -> relu, output(3) lineal
+
+	Se necesita un script python que monte esa red y permita entrenarla.
+
+		Dudas para resolver antes:
+			- ¿Cómo se puede monitorizar el avanze del aprendizaje de la red?
+			- ¿Cuánto puede tardar entrenar en un PC normal?
