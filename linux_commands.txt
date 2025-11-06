@@ -1,0 +1,20 @@
+ssh miguel@156.35.160.77
+
+miguel1234
+
+mkdir -p data/input
+scp -r C:\Users\alb\git\gps.ml.neural\data\input miguel@156.35.160.77:/home/miguel/alb/data/input
+
+scp C:\Users\alb\git\gps.ml.neural\6_train_neural_network.py miguel@156.35.160.77:/home/miguel/alb
+scp C:\Users\alb\git\gps.ml.neural\requierements.txt miguel@156.35.160.77:/home/miguel/alb
+
+scp miguel@156.35.160.77:/home/miguel/alb/training_results_complete.json C:\Users\alb\git\gps.ml.neural\trainig_results_complete_a40.json
+scp miguel@156.35.160.77:/home/miguel/alb/final_model.h5 C:\Users\alb\git\gps.ml.neural\final_model_a40.h5
+scp miguel@156.35.160.77:/home/miguel/alb/final_model_history.png C:\Users\alb\git\gps.ml.neural\final_model_history_a40.jpg
+
+
+
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python mi_script.py

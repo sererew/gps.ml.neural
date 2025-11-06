@@ -52,6 +52,9 @@ class GPSTrackDataset:
         self.manifest = pd.read_csv(self.manifest_path)
         with open(self.norm_stats_path, 'r') as f:
             self.norm_stats = json.load(f)
+
+        # Normalizar rutas en manifest para que funcionen en Windows y Linux
+        self._normalize_manifest_paths()
             
         # Crear mapa de familias reagrupadas
         self.family_groups = self._create_family_groups()
@@ -85,7 +88,18 @@ class GPSTrackDataset:
             family_groups[family_base] = sorted(family_groups[family_base])
         
         return family_groups
-    
+
+    def _normalize_manifest_paths(self):
+        """Replace backslashes with forward slashes in path columns so Path(...) works cross-platform.
+        This keeps relative paths as-is (with normalized separators) so they resolve relative to the
+        current working directory when the script runs.
+        """
+        path_cols = ['slice_path', 'label_path', 'mask_path']
+        for col in path_cols:
+            if col in self.manifest.columns:
+                # Convert NaNs to empty strings to avoid errors, then normalize separators
+                self.manifest[col] = self.manifest[col].fillna('').astype(str).apply(lambda p: p.replace('\\', '/'))
+
     def get_family_base_list(self):
         """Retorna lista de familias base para LOFO."""
         return sorted(self.family_groups.keys())
@@ -96,17 +110,22 @@ class GPSTrackDataset:
 
     def load_window_data(self, row):
         """Carga datos de una ventana específica."""
-        # Las rutas en manifest.csv ya son completas desde la raíz del proyecto
-        # No usar self.data_dir.parent, usar la ruta directamente
-        slice_path = Path(row['slice_path'])
+        # Normalizar separadores y expandir ~ si aparece. Dejar rutas relativas como relativas
+        def _to_path(p):
+            if pd.isna(p) or str(p) == '':
+                return Path(p)
+            pstr = str(p).replace('\\', '/')
+            return Path(pstr).expanduser()
+
+        slice_path = _to_path(row['slice_path'])
         input_data = pd.read_csv(slice_path)
         
         # Cargar datos de etiquetas (patrón limpio)
-        label_path = Path(row['label_path'])
+        label_path = _to_path(row['label_path'])
         label_data = pd.read_csv(label_path)
         
         # Cargar máscara
-        mask_path = Path(row['mask_path'])
+        mask_path = _to_path(row['mask_path'])
         mask_data = pd.read_csv(mask_path)
         
         # Extraer características (dx, dy, dz) - CORRECTO según tus datos
@@ -216,7 +235,8 @@ def create_model(sequence_length=3600, n_features=3):
         Masking(mask_value=0.0, input_shape=(sequence_length, n_features)),
         
         # LSTM con 128 unidades, devuelve secuencias completas
-        LSTM(128, return_sequences=True, dropout=0.1, recurrent_dropout=0.1),
+        # LSTM(128, return_sequences=True, dropout=0.1, recurrent_dropout=0.1),
+        LSTM(128, return_sequences=True, dropout=0.1, recurrent_dropout=0.0),
         
         # Capa densa con 64 neuronas y ReLU
         Dense(64, activation='relu'),
@@ -528,7 +548,7 @@ def main():
         # CONFIGURACIÓN DE MODO
         # =============================
         # Cambiar FAST_MODE a True para pruebas rápidas
-        FAST_MODE = True  # ← Cambiar aquí entre True (rápido) y False (completo)
+        FAST_MODE = False  # ← Cambiar aquí entre True (rápido) y False (completo)
         
         print(f"🔍 FAST_MODE configurado: {FAST_MODE}")
         
@@ -557,7 +577,7 @@ def main():
             
             model_config = {
                 'epochs': 100,
-                'batch_size': 32,
+                'batch_size': 64,
                 'learning_rate': 1e-3,
                 'patience': 15
             }

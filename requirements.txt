@@ -6,7 +6,7 @@ pandas>=1.3.0
 
 # Librerías para machine learning y redes neuronales
 # Nota: TensorFlow 2.15.x es la última versión estable con soporte completo para Python 3.12
-tensorflow>=2.15.0,<2.16.0
+tensorflow>=2.15.0
 scikit-learn>=1.0.0
 
 # Librerías para visualización y gráficos
