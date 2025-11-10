@@ -17,7 +17,7 @@ Métricas calculadas:
 - Todas las métricas como desviación respecto al patrón
 
 Umbrales:
-- Desnivel con umbral: 5m de altura en tramos de 50m de distancia
+- Desnivel con umbral: 5m de diferencia de altura con recpecto al último punto acumulado
 - Velocidad mínima de movimiento: 1 km/h  
 - Distancia para pendientes: 50 m
 
@@ -185,90 +185,49 @@ def calculate_distance_cumulative(df):
     
     return total_distance
 
-def calculate_elevation_gain_loss_by_distance(df, distance_threshold=50.0, elevation_threshold=5.0):
-    """
-    Calcula desnivel positivo y negativo acumulado por tramos de distancia fija.
-    
-    Args:
-        df: DataFrame con columnas lat, lon, ele
-        distance_threshold: Distancia mínima en metros para evaluar desnivel (default: 50m)
-        elevation_threshold: Umbral mínimo de desnivel para considerar cambio (default: 5m)
-        
-    Returns:
-        tuple: (gain, loss) en metros
-    """
-    if len(df) < 2:
-        return 0.0, 0.0
-    
-    gain = 0.0
-    loss = 0.0
-    
-    # Punto de referencia inicial
-    ref_index = 0
-    ref_elevation = df.iloc[0]['ele']
-    accumulated_distance = 0.0
-    
-    for i in range(1, len(df)):
-        # Calcular distancia desde el punto anterior
-        coord1 = (df.iloc[i-1]['lat'], df.iloc[i-1]['lon'])
-        coord2 = (df.iloc[i]['lat'], df.iloc[i]['lon'])
-        segment_distance = geodesic(coord1, coord2).meters
-        accumulated_distance += segment_distance
-        
-        # Si hemos acumulado la distancia mínima, evaluar desnivel
-        if accumulated_distance >= distance_threshold:
-            current_elevation = df.iloc[i]['ele']
-            elevation_change = current_elevation - ref_elevation
-            
-            # Aplicar umbral de elevación
-            if abs(elevation_change) >= elevation_threshold:
-                if elevation_change > 0:
-                    gain += elevation_change
-                else:
-                    loss += abs(elevation_change)
-            
-            # Resetear punto de referencia
-            ref_index = i
-            ref_elevation = current_elevation
-            accumulated_distance = 0.0
-    
-    return gain, loss
-
 def calculate_elevation_gain_loss(df, threshold=None):
     """
     Calcula desnivel positivo y negativo acumulado.
-    
+
     Args:
         df: DataFrame con columna ele
         threshold: Si es None, calcula sin umbral punto a punto.
-                  Si es un número, usa umbral de distancia (SLOPE_DISTANCE metros)
-        
+                  Si es un número, acumula cambios sólo cuando la diferencia
+                  entre la elevación actual y la última elevación acumulada
+                  (referencia) es mayor o igual al umbral.
+
     Returns:
         tuple: (gain, loss) en metros
     """
     if len(df) < 2:
         return 0.0, 0.0
-    
-    if threshold is None:
-        # Cálculo sin umbral - punto a punto temporal
-        gain = 0.0
-        loss = 0.0
-        
-        for i in range(1, len(df)):
-            elevation_change = df.iloc[i]['ele'] - df.iloc[i-1]['ele']
+
+    gain = 0.0
+    loss = 0.0
+
+    # Usar la primera elevación como referencia inicial. En el caso
+    # threshold is None se actualizará la referencia en cada iteración,
+    # reproduciendo el comportamiento punto-a-punto.
+    ref_elevation = df.iloc[0]['ele']
+
+    for i in range(1, len(df)):
+        current_elevation = df.iloc[i]['ele']
+        elevation_change = current_elevation - ref_elevation
+
+        # Si no hay umbral, aceptamos siempre el cambio (comportamiento punto a punto).
+        # Si hay umbral, sólo acumulamos y actualizamos la referencia cuando la
+        # diferencia absoluta es >= threshold.
+        if threshold is None or abs(elevation_change) >= threshold:
             if elevation_change > 0:
                 gain += elevation_change
             else:
                 loss += abs(elevation_change)
-        
-        return gain, loss
-    else:
-        # Cálculo con umbral - por tramos de distancia
-        return calculate_elevation_gain_loss_by_distance(
-            df, 
-            distance_threshold=SLOPE_DISTANCE,  # 50 metros
-            elevation_threshold=threshold       # 5 metros
-        )
+
+            # Actualizar referencia sólo cuando se ha acumulado el cambio
+            # (o siempre si threshold es None porque la condición anterior se cumple).
+            ref_elevation = current_elevation
+
+    return gain, loss
 
 def interpolate_track_to_pattern_times(track_df, pattern_df):
     """
