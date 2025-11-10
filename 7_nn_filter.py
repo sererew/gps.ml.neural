@@ -13,8 +13,11 @@ El proceso es:
 8. Guardar como GPX filtrado
 
 Uso:
-    python 7_nn_filter.py input_track.gpx output_track.gpx
-    python 7_nn_filter.py input_track.gpx output_track.gpx --model custom_model.h5
+    python 7_nn_filter.py input_track.gpx [output_track.gpx]
+    python 7_nn_filter.py input_track.gpx [output_track.gpx] --model custom_model.h5
+    
+Si no se especifica output_track.gpx, se genera automáticamente como:
+    <directorio_entrada>/<nombre_original>_nn_filtered.gpx
 """
 
 import numpy as np
@@ -22,6 +25,7 @@ import pandas as pd
 import json
 import argparse
 import sys
+import os
 from pathlib import Path
 from datetime import datetime, timedelta
 import xml.etree.ElementTree as ET
@@ -139,9 +143,15 @@ def calculate_deltas(x, y, z):
     Returns:
         dx, dy, dz: Arrays de deltas
     """
-    dx = np.diff(x, prepend=x[0])  # Primer delta = 0
-    dy = np.diff(y, prepend=y[0])
-    dz = np.diff(z, prepend=z[0])
+    # El primer delta debe ser 0 (no hay movimiento desde un punto anterior)
+    dx = np.diff(x, prepend=0)  
+    dy = np.diff(y, prepend=0)
+    dz = np.diff(z, prepend=0)
+    
+    # Asegurar que el primer delta es exactamente 0
+    dx[0] = 0.0
+    dy[0] = 0.0
+    dz[0] = 0.0
     
     return dx, dy, dz
 
@@ -176,6 +186,8 @@ def integrate_deltas(dx, dy, dz, x0, y0, z0):
     Returns:
         x, y, z: Coordenadas absolutas
     """
+    # Integración acumulativa: cada posición es la suma de todos los deltas anteriores
+    # más la posición inicial
     x = np.cumsum(dx) + x0
     y = np.cumsum(dy) + y0  
     z = np.cumsum(dz) + z0
@@ -415,13 +427,32 @@ def main():
     """Función principal."""
     parser = argparse.ArgumentParser(description='Filter GPS track using neural network')
     parser.add_argument('input_gpx', help='Input GPX file (sampled at 1Hz)')
-    parser.add_argument('output_gpx', help='Output filtered GPX file')
+    parser.add_argument('output_gpx', nargs='?', help='Output filtered GPX file (optional)')
     parser.add_argument('--model', default='final_model.h5', help='Path to trained model')
     parser.add_argument('--norm-stats', default='data/input/norm_stats.json', help='Path to normalization statistics')
+    parser.add_argument('--suffix', default='nn_filtered', help='Suffix for auto-generated output filename')
     
     args = parser.parse_args()
     
     try:
+        # Generar nombre de archivo de salida automáticamente si no se especifica
+        if args.output_gpx is None:
+            input_path = Path(args.input_gpx)
+            output_dir = input_path.parent
+            
+            # Crear directorio de salida si no existe
+            output_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Generar nombre con sufijo
+            output_filename = f"{input_path.stem}_{args.suffix}{input_path.suffix}"
+            args.output_gpx = output_dir / output_filename
+            
+            print(f"Output file auto-generated: {args.output_gpx}")
+        else:
+            # Crear directorio de salida si no existe
+            output_path = Path(args.output_gpx)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+        
         print(f"Processing {args.input_gpx}...")
         
         # Cargar track de entrada
@@ -440,15 +471,16 @@ def main():
             filtered_df['lon'], 
             filtered_df['ele'],
             filtered_df['time'] if 'time' in filtered_df.columns else None,
-            args.output_gpx
+            str(args.output_gpx)
         )
         
-        print(f"✅ Filtering completed successfully!")
+        print(f"SUCCESS: Filtering completed successfully!")
         print(f"   Input: {len(track_df)} points")
         print(f"   Output: {len(filtered_df)} points")
+        print(f"   Filtered track saved to: {args.output_gpx}")
         
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"ERROR: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

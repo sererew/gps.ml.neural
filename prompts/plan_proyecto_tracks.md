@@ -10,11 +10,14 @@ Desarrollar un sistema de **filtrado de tracks GPS** que, **dado cualquier track
 **Enfoque**: La red neuronal actúa como **filtro punto a punto**, no predice directamente las métricas finales. Esto permite entrenar con pares (track_ruidoso, track_limpio) y después calcular cualquier métrica del track filtrado.
 
 ## 2️⃣ Datos de partida
-* **17 familias de recorridos reales** (reagrupadas automáticamente):  
+* **25 pasadas de recorridos reales** (reagrupadas automáticamente en **17 familias** para entrenamiento):  
   * Cada familia tiene 1 **track patrón limpio** (referencia gold standard)
   * Y entre 1-16 **grabaciones ruidosas** del mismo recorrido
-  * **Familias con derivadas**: Las pasadas con sufijo letra (4b, 4c, 4d, 15a, 15b, etc.) son grabaciones parciales de la misma familia (GPS sin batería) que se reagrupan automáticamente con su familia base
-* **Total**: 820 ventanas de entrenamiento de diferentes grabaciones ruidosas con sus patrones de referencia
+  * **Familias con derivadas**: 8 pasadas son versiones cortas por batería agotada de GPS:
+    - **Familia 4**: `['4', '4b', '4c', '4d']` - 4 pasadas que forman 1 familia
+    - **Familia 15**: `['15', '15a', '15b', '15c', '15d']` - 5 pasadas que forman 1 familia
+  * **Familias individuales**: Las otras 16 pasadas son familias independientes
+* **Total**: 255 tracks procesados y 820 ventanas de entrenamiento de **17 familias**
 
 ## 3️⃣ Preprocesamiento (implementado en scripts 1-5)
 1. **Resampleado temporal a 1 Hz** de todas las grabaciones
@@ -62,76 +65,166 @@ Desarrollar un sistema de **filtrado de tracks GPS** que, **dado cualquier track
 - LOFO estadísticamente válido (todas las familias aportan datos suficientes)
 - No hay "data leakage" entre grabaciones de la misma familia
 
-## 6️⃣ Flujo de Uso del Sistema
+## 6️⃣ Sistema de Filtrado Individual (scripts 7_*.py)
+**Filtros implementados**:
+
+### **7_nn_filter.py** - Filtro de Red Neuronal
+- **Proceso completo**: Deltas → Normalización → Red → Desnormalización → Integración
+- **Características**:
+  - Carga modelo entrenado (`final_model.h5`) y estadísticas (`norm_stats.json`)
+  - Maneja tracks largos en chunks de 3600 puntos
+  - Conversión robusta lat/lon ↔ coordenadas métricas
+  - Integración correcta de deltas para preservar posición inicial
+
+### **Filtros de Referencia Clásicos**:
+- **7_identity_filter.py**: Sin filtrado (baseline de comparación)
+- **7_moving_average_filter.py**: Media aritmética en ventana deslizante
+- **7_triangular_weighted_filter.py**: Media ponderada con pesos triangulares
+- **7_median_filter.py**: Mediana móvil (efectivo contra outliers)
+- **7_savgol_filter.py**: Savitzky-Golay con ajuste polinomial local
+- **7_exponential_filter.py**: Suavizado exponencial (EMA)
+- **7_gaussian_filter.py**: Filtro gaussiano con kernel configurable
+- **7_kalman_filter.py**: Filtro Kalman simple con modelo de velocidad constante
+
+**Características comunes**:
+- **Uso consistente**: `python 7_<filtro>_filter.py input.gpx [output.gpx]`
+- **Generación automática** de nombres: `<original>_<filtro>_filtered.gpx`
+- **Creación automática** de directorios de salida
+- **Parámetros configurables** específicos por filtro
+- **Compatibilidad Windows**: Sin caracteres Unicode problemáticos
+
+## 7️⃣ Procesamiento Masivo (script 8_apply_all_filters.py)
+**Funcionalidad**:
+- **Detección automática** de todos los tracks en `data/preprocessed/<pasada>/`
+- **Detección automática** de todos los filtros disponibles (scripts `7_*_filter.py`)
+- **Aplicación masiva** de todos los filtros a todos los tracks
+- **Procesamiento paralelo** configurable (4 procesos por defecto)
+
+**Características avanzadas**:
+- **Gestión inteligente**: No sobrescribe archivos existentes (configurable)
+- **Estructura organizada**: `data/filtered/<filtro>/<pasada>/`
+- **Progress tracking**: Progreso en tiempo real con estadísticas
+- **Manejo robusto** de errores y timeouts (5 min por filtro)
+- **Escalabilidad**: Procesa automáticamente 25 pasadas × 9 filtros = 2295 combinaciones
+
+**Uso**:
+```bash
+# Procesar todo
+python 8_apply_all_filters.py
+
+# Solo ciertas pasadas/filtros
+python 8_apply_all_filters.py --pasadas 1,2,3 --filtros nn,kalman,savgol
+
+# Con sobrescritura
+python 8_apply_all_filters.py --overwrite
+```
+
+## 8️⃣ Análisis Comparativo (script 9_compare_tracks.py)
+**Funcionalidad principal**:
+- **Comparación automática** de todos los tracks filtrados vs sus patrones de referencia
+- **Recorte temporal**: Solo compara puntos dentro del rango temporal del patrón
+- **Métricas completas**: Distancia, desniveles, desviación 3D punto a punto
+- **Salida Excel** con análisis detallado y resumen por filtro
+
+**Métricas calculadas**:
+
+### **Métricas del patrón (referencia)**:
+- `total_pattern_length`: Distancia total del patrón
+- `total_pattern_elevation_gain/loss`: Desniveles del patrón
+- `total_pattern_elevation_gain/loss_threshold`: Con umbral de 5m
+
+### **Desviaciones respecto al patrón**:
+- `total_length_deviation`: Diferencia en distancia total
+- `total_elevation_gain/loss_deviation`: Diferencias en desniveles
+- `total_elevation_gain/loss_deviation_threshold`: Con umbral de 5m
+- `mean_point_deviation`: Desviación 3D media punto a punto (metros)
+- `std_point_deviation`: Desviación estándar de la desviación 3D
+
+**Recorte temporal crítico**:
+- **Problema**: Algunos tracks empiezan antes/terminan después que el patrón
+- **Solución**: `trim_track_to_pattern_timerange()` limita comparación al rango del patrón
+- **Garantía**: Todas las métricas se calculan solo en el tiempo válido
+
+**Salida Excel**:
+- **Track_Comparison**: Resultados detallados track por track
+- **Filter_Summary**: Estadísticas agregadas por filtro
+- **Formato profesional**: Headers, formato numérico, columnas ajustadas
+
+## 9️⃣ Flujo Completo del Sistema
+**Pipeline completo de evaluación**:
+
+1. **Scripts 1-5**: Preprocesamiento y generación de dataset
+2. **Script 6**: Entrenamiento LOFO y modelo final
+3. **Scripts 7**: Implementación de 9 filtros (neuronal + clásicos)
+4. **Script 8**: Aplicación masiva de filtros (2295 combinaciones)
+5. **Script 9**: Análisis comparativo y reporte Excel
+
 **Para un track nuevo**:
-1. **Preprocesar** (igual que entrenamiento): resamplear → calcular deltas → normalizar
-2. **Aplicar filtro neuronal**: track_ruidoso → track_filtrado  
-3. **Calcular métricas** del track filtrado:
-   - Integrar deltas filtrados para obtener posiciones
-   - Distancia total = suma de distancias entre puntos consecutivos
-   - Desnivel+ = suma de `max(dz_filtrado, 0)`
-   - Desnivel- = suma de `max(-dz_filtrado, 0)`
+1. **Preprocesar**: Resamplear a 1Hz → calcular deltas → normalizar
+2. **Aplicar filtro**: Cualquiera de los 9 filtros implementados
+3. **Calcular métricas**: Del track filtrado (distancia, desniveles, etc.)
 
-## 7️⃣ Implementación y Archivos
+## 🔟 Implementación y Archivos
 **Scripts Python** (directorio raíz):
-- `1_resample_recordings.py` → `5_generate_input_dataset.py`: Preprocesamiento completo
-- `6_train_neural_network.py`: Entrenamiento con LOFO y modelo final
+- **Preprocesamiento**: `1_resample_recordings.py` → `5_generate_input_dataset.py`
+- **Entrenamiento**: `6_train_neural_network.py`
+- **Filtros individuales**: `7_identity_filter.py` → `7_nn_filter.py` (9 filtros)
+- **Procesamiento masivo**: `8_apply_all_filters.py`
+- **Análisis comparativo**: `9_compare_tracks.py`
 
-**Datos generados**:
-- `data/input/slices/`: Ventanas de entrada (grabaciones ruidosas)
-- `data/input/labels/`: Ventanas de etiquetas (patrones limpios)  
-- `data/input/masks/`: Máscaras binarias para padding
-- `data/input/norm_stats.json`: Estadísticas de normalización
-- `data/input/manifest.csv`: Metadatos de todas las ventanas
+**Estructura de datos**:
+```
+data/
+├── input/                    # Dataset de entrenamiento
+│   ├── slices/              # Ventanas de entrada (grabaciones ruidosas)
+│   ├── labels/              # Ventanas de etiquetas (patrones limpios)
+│   ├── masks/               # Máscaras binarias para padding
+│   ├── norm_stats.json      # Estadísticas de normalización
+│   └── manifest.csv         # Metadatos de ventanas
+├── preprocessed/            # Tracks resampleados a 1Hz
+│   └── <pasada>/
+│       ├── <pasada>_aligned_pattern_resampled.gpx  # Patrón de referencia
+│       └── *_resampled.gpx  # Grabaciones resampleadas
+└── filtered/                # Tracks filtrados por método
+    └── <filtro>/
+        └── <pasada>/
+            └── *_<filtro>_filtered.gpx
+```
 
-**Resultados**:
-- `final_model.h5`: Modelo entrenado con todas las familias
-- `complete_training_results.json`: Métricas LOFO + modelo final
-- `final_model_history.png`: Gráficos de entrenamiento
+**Resultados del entrenamiento**:
+- `final_model.h5`: Modelo neuronal entrenado
+- `complete_training_results.json`: Métricas LOFO completas
+- `final_model_history.png`: Gráficos de convergencia
 
-## 8️⃣ Diferencias clave vs plan original
-**Cambios fundamentales basados en los datos reales**:
+**Resultados del análisis**:
+- `track_comparison_results.xlsx`: Comparación completa de todos los filtros
 
-1. **Enfoque**: 
-   - ❌ **Original**: Red predice métricas globales directamente
-   - ✅ **Actual**: Red filtra deltas punto a punto → calcular métricas después
-
-2. **Familias**:
-   - ❌ **Original**: "11 familias" fijas
-   - ✅ **Actual**: 17 familias con reagrupación automática de derivadas
-
-3. **Features**:
-   - ❌ **Original**: `[dh, dz, pendiente]` 
-   - ✅ **Actual**: `[dx, dy, dz]` (deltas 3D directos)
-
-4. **Ventanas**:
-   - ❌ **Original**: Tracks completos de longitud variable
-   - ✅ **Actual**: Ventanas fijas 3600 puntos con solapamiento
-
-**Razones de los cambios**:
-- **Entrenable**: Pares (entrada_ruidosa, salida_limpia) son fáciles de obtener
-- **Generalizable**: El filtro aprende patrones de ruido, no rutas específicas  
-- **Flexible**: Cualquier métrica se puede calcular del track filtrado
-- **Robusto**: LOFO con familias reagrupadas es estadísticamente válido
-
-## 9️⃣ Métricas de Evaluación
+## 1️⃣1️⃣ Métricas de Evaluación
 **Durante entrenamiento**:
-- MAE en deltas normalizados (para convergencia)
-- MAE en metros reales (para interpretabilidad)
+- MAE en deltas normalizados (convergencia)
+- MAE en metros reales (interpretabilidad física)
 
-**Esperado en producción**:
-- MAE de ~0.2 metros en X,Y sería excelente (mejor que precisión GPS típica)
-- MAE de ~0.04 metros en Z sería muy bueno para altitud
-- Error en métricas finales dependerá de la integración de estos deltas
+**En producción**:
+- **Desviación 3D punto a punto**: Métrica principal de precisión
+- **Error en distancia total**: Acumulación de errores de trayectoria
+- **Error en desniveles**: Precisión en cálculo de elevación
+- **Comparación directa**: 9 filtros en condiciones idénticas
 
-**Interpretación del MAE**:
-- MAE normalizado: Para comparar componentes (dx vs dy vs dz)
-- MAE en metros: Error físico real del filtro por punto
-- Desnormalización: `valor_metro = valor_norm * std + mean` usando `norm_stats.json`
+**Interpretación**:
+- MAE < 0.5m en desviación 3D → Excelente para GPS típico
+- Desviación relativa en distancia < 1% → Muy buena precisión
+- Comparación estadística entre filtros → Identificar mejor método
 
-### Resultado esperado
-Con este sistema de filtrado:
-* **Cualquier track GPS ruidoso** → **Track filtrado** → **Métricas precisas**
-* Error (MAE) mejor que métodos clásicos de suavizado
-* Capacidad de generalización verificada por LOFO en 17 familias reales
-* Sistema robusto preparado para tracks de recorridos completamente nuevos
+## 1️⃣2️⃣ Resultado Final
+Con este sistema completo:
+* **✅ Entrenamiento robusto**: LOFO en 17 familias garantiza generalización
+* **✅ Comparación exhaustiva**: 9 filtros evaluados en condiciones idénticas  
+* **✅ Métricas completas**: Distancia, desniveles y desviación 3D
+* **✅ Automatización total**: Desde track ruidoso hasta reporte Excel
+* **✅ Reproducibilidad**: Pipeline completamente automatizado y documentado
+
+**Capacidades del sistema**:
+- **Cualquier track GPS ruidoso** → **Track filtrado de alta precisión**
+- **Evaluación objetiva** de filtro neuronal vs métodos clásicos
+- **Métricas precisas** para cálculo de distancia y desniveles
+- **Sistema escalable** para nuevas pasadas y filtros adicionales
