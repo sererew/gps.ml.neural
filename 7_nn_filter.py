@@ -3,21 +3,18 @@
 Script para filtrar un track GPS usando la red neuronal entrenada.
 
 El proceso es:
-1. Cargar track GPX de entrada (ya sampleado a 1Hz)
-2. Convertir a coordenadas métricas locales
-3. Calcular deltas (dx, dy, dz)
+1. Cargar track GPX usando gpxpy (manejo robusto)
+2. Convertir a coordenadas métricas usando pyproj (geodésicamente correcto)
+3. Calcular deltas (dx[1:] = diff(x), dx[0] = 0)
 4. Normalizar usando estadísticas del entrenamiento
 5. Aplicar filtro de red neuronal
 6. Desnormalizar deltas filtrados
-7. Regenerar coordenadas absolutas
-8. Guardar como GPX filtrado
+7. Integrar deltas preservando posición inicial
+8. Guardar como GPX filtrado usando gpxpy
 
 Uso:
     python 7_nn_filter.py input_track.gpx [output_track.gpx]
     python 7_nn_filter.py input_track.gpx [output_track.gpx] --model custom_model.h5
-    
-Si no se especifica output_track.gpx, se genera automáticamente como:
-    <directorio_entrada>/<nombre_original>_nn_filtered.gpx
 """
 
 import numpy as np
@@ -28,140 +25,145 @@ import sys
 import os
 from pathlib import Path
 from datetime import datetime, timedelta
-import xml.etree.ElementTree as ET
+
+# Librerías especializadas
+import gpxpy
+import gpxpy.gpx
+from pyproj import Transformer
 
 import tensorflow as tf
 from tensorflow.keras.models import load_model, Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout, Masking
+from accelerate.commands.menu import input
 
 def parse_gpx(gpx_path):
     """
-    Parsea un archivo GPX y extrae lat, lon, ele, time.
+    Parsea un archivo GPX usando gpxpy.
     
     Returns:
         DataFrame con columnas: lat, lon, ele, time
     """
-    tree = ET.parse(gpx_path)
-    root = tree.getroot()
-    
-    # Manejar namespace de GPX
-    ns = {'gpx': 'http://www.topografix.com/GPX/1/1'}
-    if root.tag.startswith('{'):
-        # Ya tiene namespace
-        ns = {'gpx': root.tag.split('}')[0][1:]}
+    print(f"Loading GPX from {gpx_path}...")
+    with open(gpx_path, 'r', encoding='utf-8') as gpx_file:
+        gpx = gpxpy.parse(gpx_file)
     
     points = []
     
-    # Buscar todos los trackpoints
-    for trkpt in root.findall('.//gpx:trkpt', ns):
-        try:
-            lat = float(trkpt.get('lat'))
-            lon = float(trkpt.get('lon'))
-            
-            # Elevación
-            ele_elem = trkpt.find('gpx:ele', ns)
-            ele = float(ele_elem.text) if ele_elem is not None else 0.0
-            
-            # Tiempo
-            time_elem = trkpt.find('gpx:time', ns)
-            time_str = time_elem.text if time_elem is not None else None
-            
-            points.append({
-                'lat': lat,
-                'lon': lon, 
-                'ele': ele,
-                'time': time_str
-            })
-            
-        except (ValueError, TypeError) as e:
-            print(f"Warning: Error parsing point {trkpt}: {e}")
-            continue
+    for track in gpx.tracks:
+        for segment in track.segments:
+            for point in segment.points:
+                points.append({
+                    'lat': point.latitude,
+                    'lon': point.longitude,
+                    'ele': point.elevation if point.elevation is not None else 0.0,
+                    'time': point.time
+                })
     
     if not points:
-        raise ValueError(f"No valid trackpoints found in {gpx_path}")
+        raise ValueError(f"No trackpoints found in {gpx_path}")
     
     df = pd.DataFrame(points)
-    
-    # Convertir tiempo si está disponible
-    if df['time'].notna().any():
-        df['time'] = pd.to_datetime(df['time'], errors='coerce')
-    
     print(f"Loaded {len(df)} points from {gpx_path}")
     return df
 
-def latlon_to_meters(lat, lon, lat_ref, lon_ref):
+def setup_projection(lat_center, lon_center):
     """
-    Convierte lat/lon a coordenadas métricas locales usando proyección simple.
-    
-    Args:
-        lat, lon: Arrays de latitud y longitud
-        lat_ref, lon_ref: Punto de referencia (primer punto del track)
+    Configura proyección geodésica precisa usando UTM automático.
     
     Returns:
-        x, y: Coordenadas en metros
+        Transformer para conversión lat/lon <-> x/y
     """
-    # Constantes aproximadas para conversión
-    lat_to_m = 111320.0  # metros por grado de latitud
+    # Determinar zona UTM automáticamente
+    utm_zone = int((lon_center + 180) / 6) + 1
+    hemisphere = 'north' if lat_center >= 0 else 'south'
     
-    # Corrección de longitud por latitud
-    lon_to_m = 111320.0 * np.cos(np.radians(lat_ref))
+    # Crear transformador geodésico preciso
+    # WGS84 (EPSG:4326) -> UTM
+    utm_crs = f"+proj=utm +zone={utm_zone} +{hemisphere} +datum=WGS84 +units=m +no_defs"
+    transformer = Transformer.from_crs("EPSG:4326", utm_crs, always_xy=True)
     
-    # Calcular desplazamientos en metros
-    x = (lon - lon_ref) * lon_to_m
-    y = (lat - lat_ref) * lat_to_m
-    
-    return x, y
+    print(f"Using UTM Zone {utm_zone}{hemisphere[0].upper()} projection")
+    return transformer
 
-def meters_to_latlon(x, y, lat_ref, lon_ref):
+def latlon_to_meters(lat, lon, transformer, lat_ref=None, lon_ref=None):
     """
-    Convierte coordenadas métricas locales de vuelta a lat/lon.
-    
-    Args:
-        x, y: Coordenadas en metros
-        lat_ref, lon_ref: Punto de referencia original
-    
-    Returns:
-        lat, lon: Latitud y longitud
+    Convierte lat/lon a coordenadas métricas usando proyección geodésica.
     """
-    # Constantes aproximadas para conversión
-    lat_to_m = 111320.0
-    lon_to_m = 111320.0 * np.cos(np.radians(lat_ref))
+    # Convertir a UTM
+    x_utm, y_utm = transformer.transform(lon, lat)
     
-    # Convertir de vuelta
-    lat = lat_ref + (y / lat_to_m)
-    lon = lon_ref + (x / lon_to_m)
+    # Si se proporciona referencia, hacer coordenadas relativas
+    if lat_ref is not None and lon_ref is not None:
+        x_ref, y_ref = transformer.transform(lon_ref, lat_ref)
+        x_utm = x_utm - x_ref
+        y_utm = y_utm - y_ref
+    
+    return x_utm, y_utm
+
+def meters_to_latlon(x, y, transformer, lat_ref=None, lon_ref=None):
+    """
+    Convierte coordenadas métricas de vuelta a lat/lon.
+    """
+    # Si hay referencia, convertir de relativas a absolutas
+    if lat_ref is not None and lon_ref is not None:
+        x_ref, y_ref = transformer.transform(lon_ref, lat_ref)
+        x = x + x_ref
+        y = y + y_ref
+    
+    # Convertir de UTM a lat/lon
+    lon, lat = transformer.transform(x, y, direction='INVERSE')
     
     return lat, lon
 
 def calculate_deltas(x, y, z):
     """
-    Calcula deltas entre puntos consecutivos.
+    Calcula deltas entre puntos consecutivos
     
-    Args:
-        x, y, z: Arrays de coordenadas
-        
-    Returns:
-        dx, dy, dz: Arrays de deltas
+    El primer punto no tiene delta (dx[0] = 0), 
+    los siguientes son diferencias entre consecutivos.
     """
-    # El primer delta debe ser 0 (no hay movimiento desde un punto anterior)
-    dx = np.diff(x, prepend=0)  
-    dy = np.diff(y, prepend=0)
-    dz = np.diff(z, prepend=0)
+    # Inicializar arrays de deltas
+    dx = np.zeros_like(x)
+    dy = np.zeros_like(y)
+    dz = np.zeros_like(z)
     
-    # Asegurar que el primer delta es exactamente 0
-    dx[0] = 0.0
-    dy[0] = 0.0
-    dz[0] = 0.0
+    # El primer punto no tiene delta (permanece en 0)
+    # Los siguientes puntos: delta[i] = pos[i] - pos[i-1]
+    dx[1:] = np.diff(x)  # x[1] - x[0], x[2] - x[1], etc.
+    dy[1:] = np.diff(y)
+    dz[1:] = np.diff(z)
+    
+    print(f"Delta calculation check:")
+    print(f"  First 5 deltas dx: {dx[:5]}")
+    print(f"  Delta stats: dx={np.mean(dx):.3f}±{np.std(dx):.3f}, "
+          f"dy={np.mean(dy):.3f}±{np.std(dy):.3f}, dz={np.mean(dz):.3f}±{np.std(dz):.3f}")
     
     return dx, dy, dz
 
 def normalize_deltas(dx, dy, dz, norm_stats):
     """
     Normaliza deltas usando estadísticas de entrenamiento.
+    VERIFICA que las estadísticas sean consistentes.
     """
+    print(f"Normalization stats:")
+    print(f"  dx: mean={norm_stats['mean']['dx']:.6f}, std={norm_stats['std']['dx']:.6f}")
+    print(f"  dy: mean={norm_stats['mean']['dy']:.6f}, std={norm_stats['std']['dy']:.6f}")  
+    print(f"  dz: mean={norm_stats['mean']['dz']:.6f}, std={norm_stats['std']['dz']:.6f}")
+    
+    # Verificar que std no sea cero
+    for component in ['dx', 'dy', 'dz']:
+        if norm_stats['std'][component] == 0:
+            print(f"WARNING: std for {component} is zero! Setting to 1.0")
+            norm_stats['std'][component] = 1.0
+    
     dx_norm = (dx - norm_stats['mean']['dx']) / norm_stats['std']['dx']
-    dy_norm = (dy - norm_stats['mean']['dy']) / norm_stats['std']['dy'] 
+    dy_norm = (dy - norm_stats['mean']['dy']) / norm_stats['std']['dy']
     dz_norm = (dz - norm_stats['mean']['dz']) / norm_stats['std']['dz']
+    
+    print(f"Input deltas stats: dx={np.mean(dx):.3f}±{np.std(dx):.3f}, "
+          f"dy={np.mean(dy):.3f}±{np.std(dy):.3f}, dz={np.mean(dz):.3f}±{np.std(dz):.3f}")
+    print(f"Normalized deltas stats: dx={np.mean(dx_norm):.3f}±{np.std(dx_norm):.3f}, "
+          f"dy={np.mean(dy_norm):.3f}±{np.std(dy_norm):.3f}, dz={np.mean(dz_norm):.3f}±{np.std(dz_norm):.3f}")
     
     return dx_norm, dy_norm, dz_norm
 
@@ -173,170 +175,116 @@ def denormalize_deltas(dx_norm, dy_norm, dz_norm, norm_stats):
     dy = dy_norm * norm_stats['std']['dy'] + norm_stats['mean']['dy']
     dz = dz_norm * norm_stats['std']['dz'] + norm_stats['mean']['dz']
     
+    print(f"Filtered deltas stats: dx={np.mean(dx):.3f}±{np.std(dx):.3f}, "
+          f"dy={np.mean(dy):.3f}±{np.std(dy):.3f}, dz={np.mean(dz):.3f}±{np.std(dz):.3f}")
+    
     return dx, dy, dz
 
 def integrate_deltas(dx, dy, dz, x0, y0, z0):
     """
     Integra deltas para obtener coordenadas absolutas.
     
-    Args:
-        dx, dy, dz: Deltas filtrados
-        x0, y0, z0: Punto inicial
-        
-    Returns:
-        x, y, z: Coordenadas absolutas
+    El primer punto debe mantenerse igual, los siguientes
+    son la posición anterior + delta.
+    
+    CRÍTICO: 
+    - Posición[0] = (x0, y0, z0) [EXACTA]
+    - Posición[i] = Posición[i-1] + Delta[i] para i > 0
     """
-    # Integración acumulativa: cada posición es la suma de todos los deltas anteriores
-    # más la posición inicial
-    x = np.cumsum(dx) + x0
-    y = np.cumsum(dy) + y0  
-    z = np.cumsum(dz) + z0
+    x = np.zeros_like(dx)
+    y = np.zeros_like(dy)  
+    z = np.zeros_like(dz)
+    
+    # El primer punto es la posición inicial exacta
+    x[0] = x0
+    y[0] = y0
+    z[0] = z0
+    
+    # Integración secuencial: posición[i] = posición[i-1] + delta[i]
+    for i in range(1, len(dx)):
+        x[i] = x[i-1] + dx[i]
+        y[i] = y[i-1] + dy[i]
+        z[i] = z[i-1] + dz[i]
+    
+    print(f"Integration verification:")
+    print(f"  Original first point: ({x0:.3f}, {y0:.3f}, {z0:.3f})")
+    print(f"  Integrated first point: ({x[0]:.3f}, {y[0]:.3f}, {z[0]:.3f})")
+    print(f"  Position preservation error: {np.sqrt((x[0]-x0)**2 + (y[0]-y0)**2):.6f}m")
+    
+    # Verificar que la integración es correcta comparando con cumsum
+    x_cumsum = np.cumsum(dx) + x0
+    print(f"  Integration vs cumsum difference: {np.mean(np.abs(x - x_cumsum)):.6f}m")
     
     return x, y, z
 
-def create_gpx(lat, lon, ele, time=None, output_path="filtered_track.gpx"):
+def create_gpx_with_gpxpy(lat, lon, ele, time=None, output_path="filtered_track.gpx"):
     """
-    Crea un archivo GPX con los puntos filtrados.
+    Crea un archivo GPX usando gpxpy.
     """
-    # Crear estructura GPX
-    gpx = ET.Element("gpx")
-    gpx.set("version", "1.1")
-    gpx.set("creator", "nn_filter")
-    gpx.set("xmlns", "http://www.topografix.com/GPX/1/1")
+    print(f"Creating GPX with {len(lat)} points...")
     
-    trk = ET.SubElement(gpx, "trk")
-    name = ET.SubElement(trk, "name")
-    name.text = "Filtered Track"
+    # Crear objeto GPX
+    gpx = gpxpy.gpx.GPX()
     
-    trkseg = ET.SubElement(trk, "trkseg")
+    # Crear track y segmento
+    gpx_track = gpxpy.gpx.GPXTrack()
+    gpx.tracks.append(gpx_track)
     
+    gpx_segment = gpxpy.gpx.GPXTrackSegment()
+    gpx_track.segments.append(gpx_segment)
+    
+    # Añadir puntos
     for i in range(len(lat)):
-        trkpt = ET.SubElement(trkseg, "trkpt")
-        trkpt.set("lat", f"{lat[i]:.8f}")
-        trkpt.set("lon", f"{lon[i]:.8f}")
+        point_time = time[i] if time is not None and i < len(time) and pd.notna(time[i]) else None
         
-        # Elevación
-        ele_elem = ET.SubElement(trkpt, "ele")
-        ele_elem.text = f"{ele[i]:.2f}"
-        
-        # Tiempo si está disponible
-        if time is not None and i < len(time):
-            time_elem = ET.SubElement(trkpt, "time")
-            if pd.notna(time[i]):
-                time_elem.text = time[i].strftime("%Y-%m-%dT%H:%M:%SZ")
+        point = gpxpy.gpx.GPXTrackPoint(
+            latitude=float(lat[i]),
+            longitude=float(lon[i]),
+            elevation=float(ele[i]),
+            time=point_time
+        )
+        gpx_segment.points.append(point)
     
     # Escribir archivo
-    tree = ET.ElementTree(gpx)
-    tree.write(output_path, encoding='utf-8', xml_declaration=True)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(gpx.to_xml())
+    
     print(f"Filtered track saved to {output_path}")
 
 def masked_mae_loss(y_true, y_pred):
-    """
-    Custom loss function that may be needed when loading the model.
-    Mean Absolute Error que ignora valores enmascarados.
-    """
-    # Crear máscara: verdadero donde NO hay padding (no todos los valores son 0)
+    """Custom loss function para cargar el modelo."""
     mask = tf.reduce_sum(tf.abs(y_true), axis=-1, keepdims=True) > 1e-7
     mask = tf.cast(mask, tf.float32)
     
-    # Calcular MAE solo en posiciones válidas
     mae = tf.abs(y_true - y_pred)
     masked_mae = mae * mask
     
-    # Promedio sobre posiciones válidas
     sum_mae = tf.reduce_sum(masked_mae)
-    sum_mask = tf.reduce_sum(mask) 
+    sum_mask = tf.reduce_sum(mask)
     
-    return sum_mae / (sum_mask + 1e-7)  # Evitar división por 0
-
-def create_compatible_model(sequence_length=3600, n_features=3):
-    """Crea un modelo compatible con la arquitectura original."""
-    model = Sequential([
-        # Capa de enmascaramiento para ignorar padding
-        Masking(mask_value=0.0, input_shape=(sequence_length, n_features)),
-        
-        # LSTM con 128 unidades, devuelve secuencias completas
-        LSTM(128, return_sequences=True, dropout=0.1, recurrent_dropout=0.1),
-        
-        # Capa densa con 64 neuronas y ReLU
-        Dense(64, activation='relu'),
-        Dropout(0.2),
-        
-        # Capa de salida con 3 neuronas (dx, dy, dz) y activación lineal
-        Dense(n_features, activation='linear')
-    ])
-    
-    return model
+    return sum_mae / (sum_mask + 1e-7)
 
 def load_model_robust(model_path):
-    """
-    Carga el modelo de forma robusta manejando diferentes versiones de TensorFlow/Keras.
-    """
+    """Carga el modelo de forma robusta."""
     print("Loading neural network model...")
     
-    # Primero intentar con custom objects
     try:
         model = load_model(model_path, custom_objects={'masked_mae_loss': masked_mae_loss})
-        print(f"Model loaded successfully with custom objects.")
+        print("Model loaded successfully with custom objects.")
         return model
     except Exception as e:
-        print(f"Warning: Error loading with custom objects: {e}")
+        print(f"Warning: {e}")
     
-    # Intentar carga estándar
-    try:
-        model = load_model(model_path)
-        print(f"Model loaded successfully with standard loading.")
-        return model
-    except Exception as e:
-        print(f"Warning: Error with standard loading: {e}")
-    
-    # Intentar con compile=False para evitar problemas de optimizador
     try:
         model = load_model(model_path, compile=False)
-        print(f"Model loaded successfully without compilation.")
-        print("Note: Model loaded without optimizer state - inference only.")
+        print("Model loaded successfully without compilation.")
         return model
     except Exception as e:
-        print(f"Warning: Error with compile=False: {e}")
-    
-    # Como último recurso, crear modelo compatible y cargar pesos
-    try:
-        print("Attempting to load weights into compatible model architecture...")
-        
-        # Crear modelo compatible
-        compatible_model = create_compatible_model()
-        
-        # Intentar cargar solo los pesos
-        # Primero necesitamos compilar el modelo para que tenga la estructura correcta
-        compatible_model.compile(optimizer='adam', loss='mae')
-        
-        # Cargar el modelo original para extraer pesos
-        import h5py
-        with h5py.File(model_path, 'r') as f:
-            # Verificar si tiene pesos guardados
-            if 'model_weights' in f.keys():
-                compatible_model.load_weights(model_path)
-                print("Model weights loaded successfully into compatible architecture.")
-                return compatible_model
-            else:
-                raise ValueError("No model weights found in file")
-                
-    except Exception as e:
-        print(f"Error loading weights into compatible model: {e}")
-        
-    raise RuntimeError(f"Failed to load model from {model_path} with any method")
+        raise RuntimeError(f"Failed to load model from {model_path}: {e}")
 
 def apply_neural_network_filter(track_df, model_path="final_model.h5", norm_stats_path="data/input/norm_stats.json"):
     """
-    Aplica el filtro de red neuronal a un track.
-    
-    Args:
-        track_df: DataFrame con columnas lat, lon, ele, time
-        model_path: Ruta al modelo entrenado
-        norm_stats_path: Ruta a las estadísticas de normalización
-        
-    Returns:
-        DataFrame con track filtrado
+    Aplica el filtro de red neuronal a un track con correcciones geodésicas.
     """
     print("Loading normalization statistics...")
     with open(norm_stats_path, 'r') as f:
@@ -344,76 +292,73 @@ def apply_neural_network_filter(track_df, model_path="final_model.h5", norm_stat
     
     model = load_model_robust(model_path)
     
-    print("Converting to metric coordinates...")
-    # Usar primer punto como referencia
-    lat_ref = track_df['lat'].iloc[0]
-    lon_ref = track_df['lon'].iloc[0] 
+    print("Setting up geodesic projection...")
+    # Usar centro del track para proyección
+    lat_center = track_df['lat'].mean()
+    lon_center = track_df['lon'].mean()
+    transformer = setup_projection(lat_center, lon_center)
     
-    x, y = latlon_to_meters(track_df['lat'], track_df['lon'], lat_ref, lon_ref)
+    print("Converting to metric coordinates...")
+    # Usar primer punto como referencia para coordenadas relativas
+    lat_ref = track_df['lat'].iloc[0]
+    lon_ref = track_df['lon'].iloc[0]
+    
+    x, y = latlon_to_meters(track_df['lat'], track_df['lon'], transformer, lat_ref, lon_ref)
     z = track_df['ele'].values
     
-    print("Calculating deltas...")
+    print(f"Coordinate range: x=[{x.min():.1f}, {x.max():.1f}], y=[{y.min():.1f}, {y.max():.1f}], z=[{z.min():.1f}, {z.max():.1f}]")
+    
+    print("Calculating deltas correctly...")
     dx, dy, dz = calculate_deltas(x, y, z)
     
     print("Normalizing deltas...")
     dx_norm, dy_norm, dz_norm = normalize_deltas(dx, dy, dz, norm_stats)
     
-    # Preparar entrada para la red neuronal
-    print("Preparing input for neural network...")
+    print("Applying neural network filter...")
     sequence_length = len(dx_norm)
-    max_sequence = 3600  # Longitud máxima que maneja la red
+    max_sequence = 3600
     
-    if sequence_length > max_sequence:
-        print(f"Warning: Track has {sequence_length} points, processing in chunks of {max_sequence}")
+    # Procesar en chunks (funciona tanto para tracks largos como cortos)
+    print(f"Processing {sequence_length} points in chunks of {max_sequence}")
+    
+    filtered_dx, filtered_dy, filtered_dz = [], [], []
+    
+    for i in range(0, sequence_length, max_sequence):
+        end_idx = min(i + max_sequence, sequence_length)
+        chunk_len = end_idx - i
         
-        # Procesar en chunks
-        filtered_dx, filtered_dy, filtered_dz = [], [], []
-        
-        for i in range(0, sequence_length, max_sequence):
-            end_idx = min(i + max_sequence, sequence_length)
-            chunk_len = end_idx - i
-            
-            # Crear entrada con padding si es necesario
-            input_data = np.zeros((1, max_sequence, 3))
-            input_data[0, :chunk_len, 0] = dx_norm[i:end_idx]
-            input_data[0, :chunk_len, 1] = dy_norm[i:end_idx] 
-            input_data[0, :chunk_len, 2] = dz_norm[i:end_idx]
-            
-            # Aplicar filtro
-            filtered_chunk = model.predict(input_data, verbose=0)
-            
-            # Extraer solo la parte válida
-            filtered_dx.extend(filtered_chunk[0, :chunk_len, 0])
-            filtered_dy.extend(filtered_chunk[0, :chunk_len, 1])
-            filtered_dz.extend(filtered_chunk[0, :chunk_len, 2])
-        
-        filtered_dx = np.array(filtered_dx)
-        filtered_dy = np.array(filtered_dy)  
-        filtered_dz = np.array(filtered_dz)
-        
-    else:
-        # Procesar track completo
+        # Crear tensor con padding hasta max_sequence
         input_data = np.zeros((1, max_sequence, 3))
-        input_data[0, :sequence_length, 0] = dx_norm
-        input_data[0, :sequence_length, 1] = dy_norm
-        input_data[0, :sequence_length, 2] = dz_norm
+        input_data[0, :chunk_len, 0] = dx_norm[i:end_idx]
+        input_data[0, :chunk_len, 1] = dy_norm[i:end_idx]
+        input_data[0, :chunk_len, 2] = dz_norm[i:end_idx]
         
-        print("Applying neural network filter...")
-        filtered_output = model.predict(input_data, verbose=0)
+        # Aplicar modelo y extraer solo la porción válida
+        filtered_chunk = model.predict(input_data, verbose=0)
+        #filtered_chunk = input_data.copy() # puenteado para pruebas
         
-        # Extraer solo la parte válida
-        filtered_dx = filtered_output[0, :sequence_length, 0]
-        filtered_dy = filtered_output[0, :sequence_length, 1]
-        filtered_dz = filtered_output[0, :sequence_length, 2]
+        filtered_dx.extend(filtered_chunk[0, :chunk_len, 0])
+        filtered_dy.extend(filtered_chunk[0, :chunk_len, 1])
+        filtered_dz.extend(filtered_chunk[0, :chunk_len, 2])
+    
+    # Convertir a arrays numpy
+    filtered_dx = np.array(filtered_dx)
+    filtered_dy = np.array(filtered_dy)
+    filtered_dz = np.array(filtered_dz)
     
     print("Denormalizing filtered deltas...")
     dx_filt, dy_filt, dz_filt = denormalize_deltas(filtered_dx, filtered_dy, filtered_dz, norm_stats)
     
-    print("Integrating deltas to get absolute coordinates...")
+    print("Integrating deltas correctly to get absolute coordinates...")
     x_filt, y_filt, z_filt = integrate_deltas(dx_filt, dy_filt, dz_filt, x[0], y[0], z[0])
     
     print("Converting back to lat/lon...")
-    lat_filt, lon_filt = meters_to_latlon(x_filt, y_filt, lat_ref, lon_ref)
+    lat_filt, lon_filt = meters_to_latlon(x_filt, y_filt, transformer, lat_ref, lon_ref)
+    
+    # Verificar preservación de posición inicial
+    print(f"Position preservation check:")
+    print(f"  Original: ({track_df['lat'].iloc[0]:.8f}, {track_df['lon'].iloc[0]:.8f})")
+    print(f"  Filtered: ({lat_filt[0]:.8f}, {lon_filt[0]:.8f})")
     
     # Crear DataFrame con track filtrado
     filtered_df = track_df.copy()
@@ -426,58 +371,56 @@ def apply_neural_network_filter(track_df, model_path="final_model.h5", norm_stat
 def main():
     """Función principal."""
     parser = argparse.ArgumentParser(description='Filter GPS track using neural network')
-    parser.add_argument('input_gpx', help='Input GPX file (sampled at 1Hz)')
-    parser.add_argument('output_gpx', nargs='?', help='Output filtered GPX file (optional)')
+    parser.add_argument('input_gpx', help='Input GPX file')
+    parser.add_argument('output_gpx', nargs='?', help='Output filtered GPX file')
     parser.add_argument('--model', default='final_model.h5', help='Path to trained model')
     parser.add_argument('--norm-stats', default='data/input/norm_stats.json', help='Path to normalization statistics')
     parser.add_argument('--suffix', default='nn_filtered', help='Suffix for auto-generated output filename')
     
     args = parser.parse_args()
     
+    # Verificar dependencias
     try:
-        # Generar nombre de archivo de salida automáticamente si no se especifica
+        import gpxpy
+        import pyproj
+    except ImportError as e:
+        print(f"ERROR: Missing required library: {e}")
+        print("Install with: pip install gpxpy pyproj")
+        sys.exit(1)
+    
+    try:
         if args.output_gpx is None:
             input_path = Path(args.input_gpx)
             output_dir = input_path.parent
-            
-            # Crear directorio de salida si no existe
             output_dir.mkdir(parents=True, exist_ok=True)
             
-            # Generar nombre con sufijo
             output_filename = f"{input_path.stem}_{args.suffix}{input_path.suffix}"
             args.output_gpx = output_dir / output_filename
-            
             print(f"Output file auto-generated: {args.output_gpx}")
         else:
-            # Crear directorio de salida si no existe
-            output_path = Path(args.output_gpx)
-            output_path.parent.mkdir(parents=True, exist_ok=True)
+            Path(args.output_gpx).parent.mkdir(parents=True, exist_ok=True)
         
         print(f"Processing {args.input_gpx}...")
         
-        # Cargar track de entrada
         track_df = parse_gpx(args.input_gpx)
         
-        # Aplicar filtro de red neuronal
         filtered_df = apply_neural_network_filter(
-            track_df, 
+            track_df,
             model_path=args.model,
             norm_stats_path=args.norm_stats
         )
         
-        # Guardar track filtrado
-        create_gpx(
-            filtered_df['lat'], 
-            filtered_df['lon'], 
+        create_gpx_with_gpxpy(
+            filtered_df['lat'],
+            filtered_df['lon'],
             filtered_df['ele'],
             filtered_df['time'] if 'time' in filtered_df.columns else None,
             str(args.output_gpx)
         )
         
-        print(f"SUCCESS: Filtering completed successfully!")
+        print(f"SUCCESS: Filtering completed!")
         print(f"   Input: {len(track_df)} points")
         print(f"   Output: {len(filtered_df)} points")
-        print(f"   Filtered track saved to: {args.output_gpx}")
         
     except Exception as e:
         print(f"ERROR: {e}")
