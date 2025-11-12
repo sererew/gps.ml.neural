@@ -282,7 +282,7 @@ def load_model_robust(model_path):
     except Exception as e:
         raise RuntimeError(f"Failed to load model from {model_path}: {e}")
 
-def apply_neural_network_filter(track_df, model_path="final_model.h5", norm_stats_path="data/input/norm_stats.json"):
+def apply_neural_network_filter(track_df, model_path="models/model_final.keras", norm_stats_path="data/input/norm_stats_train.json"):
     """
     Aplica el filtro de red neuronal a un track con correcciones geodésicas.
     """
@@ -373,8 +373,8 @@ def main():
     parser = argparse.ArgumentParser(description='Filter GPS track using neural network')
     parser.add_argument('input_gpx', help='Input GPX file')
     parser.add_argument('output_gpx', nargs='?', help='Output filtered GPX file')
-    parser.add_argument('--model', default='final_model.h5', help='Path to trained model')
-    parser.add_argument('--norm-stats', default='data/input/norm_stats.json', help='Path to normalization statistics')
+    parser.add_argument('--model', default='models/model_final.keras', help='Path to trained model')
+    parser.add_argument('--norm-stats', default='data/input/norm_stats_train.json', help='Path to normalization statistics')
     parser.add_argument('--suffix', default='nn_filtered', help='Suffix for auto-generated output filename')
     
     args = parser.parse_args()

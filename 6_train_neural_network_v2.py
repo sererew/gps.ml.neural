@@ -12,6 +12,8 @@ Arquitectura:
 
 Entrada: [batch, time, features] donde features = [dx, dy, dz]
 Salida: [batch, time, features] donde features = [dx_pred, dy_pred, dz_pred]
+
+Usa dataset pre-dividido por sets (train/val/test) sin data leakage.
 """
 
 import numpy as np
@@ -20,8 +22,8 @@ import json
 import os
 import sys
 import time
+import argparse
 from pathlib import Path
-from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 
 import tensorflow as tf
@@ -41,76 +43,87 @@ else:
     print("Entrenando en CPU")
 
 class GPSTrackDataset:
-    """Dataset para cargar y procesar datos de tracks GPS."""
+    """Dataset para cargar y procesar datos de tracks GPS pre-divididos por sets."""
     
     def __init__(self, data_dir="data/input"):
         self.data_dir = Path(data_dir)
-        self.manifest_path = self.data_dir / "manifest.csv"
-        self.norm_stats_path = self.data_dir / "norm_stats.json"
         
-        # Cargar metadatos
-        self.manifest = pd.read_csv(self.manifest_path)
+        # Rutas de manifests por set y estadísticas de normalización
+        self.train_manifest_path = self.data_dir / "train" / "manifest_train.csv"
+        self.val_manifest_path = self.data_dir / "val" / "manifest_val.csv"
+        self.test_manifest_path = self.data_dir / "test" / "manifest_test.csv"
+        self.norm_stats_path = self.data_dir / "norm_stats_train.json"
+        
+        # Verificar que existen los archivos necesarios
+        required_files = [
+            self.train_manifest_path,
+            self.val_manifest_path, 
+            self.test_manifest_path,
+            self.norm_stats_path
+        ]
+        
+        missing_files = [f for f in required_files if not f.exists()]
+        if missing_files:
+            raise FileNotFoundError(f"Archivos faltantes: {missing_files}")
+        
+        # Cargar estadísticas de normalización
         with open(self.norm_stats_path, 'r') as f:
             self.norm_stats = json.load(f)
+        
+        print(f"Dataset pre-dividido cargado desde {data_dir}")
+        print(f"  - Train: {self.train_manifest_path}")
+        print(f"  - Val: {self.val_manifest_path}")
+        print(f"  - Test: {self.test_manifest_path}")
+        print(f"  - Stats: {self.norm_stats_path}")
 
-        # Normalizar rutas en manifest para que funcionen en Windows y Linux
-        self._normalize_manifest_paths()
-            
-        # Crear mapa de familias reagrupadas
-        self.family_groups = self._create_family_groups()
-        
-        print(f"Dataset cargado: {len(self.manifest)} ventanas")
-        print(f"Pasadas únicas: {sorted(self.manifest['pasada'].unique())}")
-        print(f"Familias reagrupadas: {len(self.family_groups)} familias")
-        for family_base, pasadas in self.family_groups.items():
-            total_ventanas = len(self.manifest[self.manifest['pasada'].isin(pasadas)])
-            total_grabaciones = self.manifest[self.manifest['pasada'].isin(pasadas)]['grabacion'].nunique()
-            if len(pasadas) > 1:
-                print(f"  Familia {family_base}: {pasadas} → {total_grabaciones} grab, {total_ventanas} ventanas")
-    
-    def _create_family_groups(self):
-        """Reagrupa pasadas por su número base (4, 4b, 4c, 4d → familia '4')."""
-        pasadas_unicas = sorted(self.manifest['pasada'].unique())
-        family_groups = {}
-        
-        for pasada in pasadas_unicas:
-            pasada_str = str(pasada)
-            
-            # Extraer número base (parte numérica)
-            base_num = ''.join(filter(str.isdigit, pasada_str))
-            
-            if base_num not in family_groups:
-                family_groups[base_num] = []
-            family_groups[base_num].append(pasada)
-        
-        # Ordenar pasadas dentro de cada familia
-        for family_base in family_groups:
-            family_groups[family_base] = sorted(family_groups[family_base])
-        
-        return family_groups
-
-    def _normalize_manifest_paths(self):
-        """Replace backslashes with forward slashes in path columns so Path(...) works cross-platform.
-        This keeps relative paths as-is (with normalized separators) so they resolve relative to the
-        current working directory when the script runs.
-        """
+    def _normalize_manifest_paths(self, manifest_df):
+        """Normaliza separadores en rutas para compatibilidad cross-platform."""
         path_cols = ['slice_path', 'label_path', 'mask_path']
         for col in path_cols:
-            if col in self.manifest.columns:
-                # Convert NaNs to empty strings to avoid errors, then normalize separators
-                self.manifest[col] = self.manifest[col].fillna('').astype(str).apply(lambda p: p.replace('\\', '/'))
+            if col in manifest_df.columns:
+                manifest_df[col] = manifest_df[col].fillna('').astype(str).apply(lambda p: p.replace('\\', '/'))
 
-    def get_family_base_list(self):
-        """Retorna lista de familias base para LOFO."""
-        return sorted(self.family_groups.keys())
-    
-    def get_pasadas_for_family(self, family_base):
-        """Retorna todas las pasadas (incluyendo derivadas) de una familia base."""
-        return self.family_groups.get(str(family_base), [])
+    def load_by_sets(self):
+        """
+        Carga dataset usando manifests pre-divididos por sets.
+        
+        Returns:
+            tuple: (train_data, val_data, test_data) donde cada elemento es (X, y, masks)
+        """
+        # Cargar manifests por set
+        train_manifest = pd.read_csv(self.train_manifest_path)
+        val_manifest = pd.read_csv(self.val_manifest_path)
+        test_manifest = pd.read_csv(self.test_manifest_path)
+        
+        # Normalizar rutas en todos los manifests
+        self._normalize_manifest_paths(train_manifest)
+        self._normalize_manifest_paths(val_manifest)
+        self._normalize_manifest_paths(test_manifest)
+        
+        print(f"Cargando datos por sets:")
+        print(f"  Train: {len(train_manifest)} ventanas")
+        print(f"  Val: {len(val_manifest)} ventanas")
+        print(f"  Test: {len(test_manifest)} ventanas")
+        
+        # Cargar datos de cada set
+        X_train, y_train, masks_train = self._load_data_batch(train_manifest)
+        X_val, y_val, masks_val = self._load_data_batch(val_manifest)
+        X_test, y_test, masks_test = self._load_data_batch(test_manifest)
+        
+        # Verificar que tenemos datos suficientes
+        if len(X_train) == 0:
+            raise ValueError("No se pudieron cargar datos de entrenamiento. Revise las rutas en manifest_train.csv")
+        if len(X_val) == 0:
+            raise ValueError("No se pudieron cargar datos de validación. Revise las rutas en manifest_val.csv")
+        if len(X_test) == 0:
+            raise ValueError("No se pudieron cargar datos de test. Revise las rutas en manifest_test.csv")
+        
+        print(f"Datos cargados - Train: {X_train.shape[0]}, Val: {X_val.shape[0]}, Test: {X_test.shape[0]}")
+        
+        return (X_train, y_train, masks_train), (X_val, y_val, masks_val), (X_test, y_test, masks_test)
 
     def load_window_data(self, row):
         """Carga datos de una ventana específica."""
-        # Normalizar separadores y expandir ~ si aparece. Dejar rutas relativas como relativas
         def _to_path(p):
             if pd.isna(p) or str(p) == '':
                 return Path(p)
@@ -128,65 +141,12 @@ class GPSTrackDataset:
         mask_path = _to_path(row['mask_path'])
         mask_data = pd.read_csv(mask_path)
         
-        # Extraer características (dx, dy, dz) - CORRECTO según tus datos
+        # Extraer características (dx, dy, dz)
         input_features = input_data[['dx', 'dy', 'dz']].values
         label_features = label_data[['dx', 'dy', 'dz']].values
-        mask_values = mask_data['mask'].values  # Usar la columna 'mask' directamente
+        mask_values = mask_data['mask'].values
         
         return input_features, label_features, mask_values
-    
-    def create_dataset(self, test_pasadas=None, max_samples=None):
-        """
-        Crea dataset de entrenamiento/validación/test.
-        
-        Args:
-            test_pasadas: Lista de pasadas para test (LOFO). Si None, split aleatorio.
-            max_samples: Máximo número de muestras a cargar (para debugging)
-        """
-        if test_pasadas is not None:
-            # Split LOFO (Leave-One-Family-Out)
-            train_mask = ~self.manifest['pasada'].isin(test_pasadas)
-            train_manifest = self.manifest[train_mask]
-            test_manifest = self.manifest[~train_mask]
-        else:
-            # Split aleatorio 80/20
-            train_manifest, test_manifest = train_test_split(
-                self.manifest, test_size=0.2, random_state=42, 
-                stratify=self.manifest['pasada']
-            )
-        
-        print(f"Train: {len(train_manifest)} ventanas")
-        print(f"Test: {len(test_manifest)} ventanas")
-        
-        # Limitar muestras si se especifica (para debugging)
-        if max_samples:
-            train_manifest = train_manifest.head(max_samples)
-            test_manifest = test_manifest.head(max_samples // 4)
-            print(f"Limitado a {len(train_manifest)} train, {len(test_manifest)} test")
-        
-        # Cargar datos de entrenamiento
-        X_train, y_train, masks_train = self._load_data_batch(train_manifest)
-        X_test, y_test, masks_test = self._load_data_batch(test_manifest)
-        
-        # Verificar que tenemos datos suficientes
-        if len(X_train) == 0:
-            raise ValueError(f"No se pudieron cargar datos de entrenamiento. Revise las rutas en manifest.csv")
-        
-        if len(X_test) == 0:
-            raise ValueError(f"No se pudieron cargar datos de test. Revise las rutas en manifest.csv")
-        
-        # Split train/validation - solo si tenemos suficientes datos
-        if len(X_train) < 5:
-            print(f"⚠️ Advertencia: Muy pocos datos de entrenamiento ({len(X_train)}). Usando los mismos datos para validación.")
-            X_val, y_val, masks_val = X_train.copy(), y_train.copy(), masks_train.copy()
-        else:
-            X_train, X_val, y_train, y_val, masks_train, masks_val = train_test_split(
-                X_train, y_train, masks_train, test_size=0.2, random_state=42
-            )
-        
-        print(f"Final - Train: {X_train.shape[0]}, Val: {X_val.shape[0]}, Test: {X_test.shape[0]}")
-        
-        return (X_train, y_train, masks_train), (X_val, y_val, masks_val), (X_test, y_test, masks_test)
     
     def _load_data_batch(self, manifest_subset):
         """Carga un lote de datos del manifest."""
@@ -209,52 +169,104 @@ class GPSTrackDataset:
         
         return X, y, masks
 
-def masked_mae_loss(y_true, y_pred):
+def make_masked_loss(lambda_traj: float, lambda_bias: float, eps: float = 1e-7):
     """
-    Mean Absolute Error que ignora valores enmascarados + término de trayectoria.
-    Asume que los valores enmascarados son 0 en y_true.
+    Pérdida = MAE_local + lambda_traj * MSE_offset_final + lambda_bias * MSE_zero_mean
     
-    Combina:
-    1. MAE local de los deltas (dx, dy, dz)
-    2. MSE de la diferencia entre acumulados (cumsum) predichos y verdaderos
+    Args:
+        lambda_traj: Peso del término de offset final
+        lambda_bias: Peso del término cero-media
+        eps: Epsilon para evitar divisiones por cero
+        
+    Returns:
+        Función de pérdida con tres términos
     """
-    # Factor de peso para el término de trayectoria
-    lambda_traj = 0.1
+    # Crear el contador de steps FUERA de la función de loss para evitar problemas con tf.function
+    step_counter = tf.Variable(0, trainable=False, dtype=tf.int64, name='loss_step_counter')
     
-    # Crear máscara: verdadero donde NO hay padding (no todos los valores son 0)
-    mask = tf.reduce_sum(tf.abs(y_true), axis=-1, keepdims=True) > 1e-7
-    mask = tf.cast(mask, tf.float32)
-    
-    # ===== TÉRMINO 1: MAE LOCAL =====
-    # Calcular MAE solo en posiciones válidas
-    mae = tf.abs(y_true - y_pred)
-    masked_mae = mae * mask
-    
-    # Promedio sobre posiciones válidas
-    sum_mae = tf.reduce_sum(masked_mae)
-    sum_mask = tf.reduce_sum(mask)
-    loss_local = sum_mae / (sum_mask + 1e-7)  # Evitar división por 0
-    
-    # ===== TÉRMINO 2: ERROR DE TRAYECTORIA ACUMULADA =====
-    # Enmascarar antes de calcular cumsum para poner a cero los timesteps de padding
-    y_true_masked = y_true * mask
-    y_pred_masked = y_pred * mask
-    
-    # Calcular acumulados a lo largo del eje temporal (axis=1)
-    true_accum = tf.cumsum(y_true_masked, axis=1)
-    pred_accum = tf.cumsum(y_pred_masked, axis=1)
-    
-    # Error cuadrático de los acumulados
-    traj_error = (pred_accum - true_accum) ** 2
-    traj_error_masked = traj_error * mask
-    
-    # MSE de trayectoria sobre posiciones válidas
-    loss_traj = tf.reduce_sum(traj_error_masked) / (sum_mask + 1e-7)
-    
-    # ===== COMBINACIÓN FINAL =====
-    loss = loss_local + lambda_traj * loss_traj
-    
-    return loss
+    def loss_fn(y_true, y_pred):
+        """
+        - MAE_local: MAE en deltas (dx,dy,dz), enmascarado por timestep.
+        - MSE_offset_final: MSE entre acumulados (cumsum) pred vs true en el ÚLTIMO timestep válido.
+        - MSE_zero_mean: MSE del promedio por ventana del error de deltas (sesgo ≈ 0).
+        """
+        # y_*: [B,T,3]
+        # Construir máscara robusta: 1 si timestep válido, 0 si padding.
+        # Heurístico robusto: considerar padding si |y_true|==0 y añadir eps para no excluir deltas 0 reales.
+        
+        # --- Heurístico robusto (por defecto) ---
+        abs_sum = tf.reduce_sum(tf.abs(y_true), axis=-1, keepdims=True)  # [B,T,1]
+        mask = tf.where(abs_sum > eps, 1.0, 0.0)                         # [B,T,1]
+        # ----------------------------------------
+
+        # # --- Máscara externa (si y_true incluye canal de máscara) ---
+        # y_true_d = y_true[..., :3]
+        # mask = y_true[..., 3:4]
+        # y_true = y_true_d
+        # # ------------------------------------------------------------
+
+        # Aplicar máscara a deltas
+        y_true_m = y_true * mask
+        y_pred_m = y_pred * mask
+
+        # 1) MAE local enmascarado (promedio por timesteps válidos)
+        denom = tf.reduce_sum(mask) + eps
+        mae = tf.reduce_sum(tf.abs(y_pred_m - y_true_m)) / denom
+
+        # 2) OFFSET FINAL: cumsum por eje temporal y MSE solo en el último timestep válido
+        true_accum = tf.cumsum(y_true_m, axis=1)  # [B,T,3]
+        pred_accum = tf.cumsum(y_pred_m, axis=1)
+
+        valid_counts = tf.cast(tf.reduce_sum(mask, axis=1, keepdims=True), tf.int32)  # [B,1,1]
+        last_idx = tf.maximum(valid_counts - 1, 0)  # [B,1,1]
+
+        # indices para gather_nd: [B, 2] -> (b, t_last)
+        B = tf.shape(y_true)[0]
+        b_inds = tf.range(B)[:, None]
+        t_inds = tf.squeeze(last_idx, axis=[1,2])[:, None]
+        idx = tf.concat([b_inds, t_inds], axis=1)  # [B,2]
+
+        true_final = tf.gather_nd(true_accum, idx)  # [B,3]
+        pred_final = tf.gather_nd(pred_accum, idx)  # [B,3]
+
+        mse_final = tf.reduce_mean(tf.reduce_sum(tf.square(pred_final - true_final), axis=-1))
+
+        # 3) CERO-MEDIA: error medio de deltas por ventana (sesgo)
+        # mean_error = mean_t( y_pred - y_true ) en timesteps válidos
+        # Usamos promedio ponderado por máscara para evitar padding
+        # sum_t(err * mask) / sum_t(mask)
+        err = (y_pred - y_true) * mask
+        sum_err = tf.reduce_sum(err, axis=1)             # [B,3]
+        sum_m = tf.reduce_sum(mask, axis=1) + eps        # [B,1]
+        mean_err = sum_err / sum_m                       # [B,3]
+        mse_bias = tf.reduce_mean(tf.reduce_sum(tf.square(mean_err), axis=-1))
+
+        # Pérdida total
+        total_loss = mae + lambda_traj * mse_final + lambda_bias * mse_bias
+        
+        # ===== MONITOREO SIMPLIFICADO =====
+        # Incrementar contador
+        step_counter.assign_add(1)
+        
+        # Calcular términos ponderados para logging ocasional
+        weighted_traj = lambda_traj * mse_final
+        weighted_bias = lambda_bias * mse_bias
+        
+        # Print directo sin condicionales para evitar problemas con tf.function
+        # TensorFlow optimizará automáticamente la frecuencia durante el entrenamiento
+        tf.print("Step:", step_counter, 
+                  "Local:", tf.round(mae * 1000000) / 1000000,
+                  "TrajFinal:", tf.round(mse_final * 1000000) / 1000000,
+                  "Bias:", tf.round(mse_bias * 1000000) / 1000000,
+                  "Lambda*TrajFinal:", tf.round(weighted_traj * 1000000) / 1000000,
+                  "Lambda*Bias:", tf.round(weighted_bias * 1000000) / 1000000,
+                  "Total:", tf.round(total_loss * 1000000) / 1000000,
+                  "ValidMask:", tf.round(tf.reduce_sum(mask)),
+                  summarize=-1)
+
+        return total_loss
+
+    return loss_fn
 
 def create_model(sequence_length=3600, n_features=3):
     """Crea el modelo de red neuronal."""
@@ -263,7 +275,6 @@ def create_model(sequence_length=3600, n_features=3):
         Masking(mask_value=0.0, input_shape=(sequence_length, n_features)),
         
         # LSTM con 128 unidades, devuelve secuencias completas
-        # LSTM(128, return_sequences=True, dropout=0.1, recurrent_dropout=0.1),
         LSTM(128, return_sequences=True, dropout=0.1, recurrent_dropout=0.0),
         
         # Capa densa con 64 neuronas y ReLU
@@ -307,7 +318,7 @@ def plot_training_history(history, save_path="training_history.png"):
     print(f"Gráfico guardado en: {save_path}")
 
 def evaluate_model(model, X_test, y_test, masks_test, norm_stats=None):
-    """Evalúa el modelo y calcula métricas en valores normalizados y metros reales."""
+    """Evalúa el modelo y calcula métricas incluyendo deriva espacial."""
     print("\n=== EVALUACIÓN DEL MODELO ===")
     
     # Predicciones
@@ -327,7 +338,15 @@ def evaluate_model(model, X_test, y_test, masks_test, norm_stats=None):
     print(f"MAE dz (normalizado): {mae_dz_norm:.6f}")
     print(f"MAE total (normalizado): {mae_total_norm:.6f}")
     
-    # Si tenemos estadísticas de normalización, calcular MAE en metros reales
+    # Inicializar diccionario de resultados
+    results = {
+        'mae_dx_norm': mae_dx_norm,
+        'mae_dy_norm': mae_dy_norm, 
+        'mae_dz_norm': mae_dz_norm,
+        'mae_total_norm': mae_total_norm
+    }
+    
+    # Si tenemos estadísticas de normalización, calcular métricas en metros reales
     if norm_stats:
         # Desnormalizar predicciones y valores reales
         y_pred_meters = y_pred.copy()
@@ -351,176 +370,177 @@ def evaluate_model(model, X_test, y_test, masks_test, norm_stats=None):
         print(f"MAE dz (metros): {mae_dz_meters:.4f} m")
         print(f"MAE total (metros): {mae_total_meters:.4f} m")
         
-        return {
-            'mae_dx_norm': mae_dx_norm,
-            'mae_dy_norm': mae_dy_norm, 
-            'mae_dz_norm': mae_dz_norm,
-            'mae_total_norm': mae_total_norm,
+        # Actualizar resultados
+        results.update({
             'mae_dx_meters': mae_dx_meters,
             'mae_dy_meters': mae_dy_meters,
             'mae_dz_meters': mae_dz_meters,
             'mae_total_meters': mae_total_meters
-        }
-    else:
-        return {
-            'mae_dx': mae_dx_norm,
-            'mae_dy': mae_dy_norm, 
-            'mae_dz': mae_dz_norm,
-            'mae_total': mae_total_norm
-        }
+        })
+        
+        # ===== MÉTRICAS DE DERIVA ESPACIAL =====
+        print(f"\n=== MÉTRICAS DE DERIVA ESPACIAL ===")
+        
+        # Aplicar máscaras para integrar solo timesteps válidos
+        drift_metrics = calculate_drift_metrics(y_pred_meters, y_test_meters, masks_test)
+        
+        print(f"Deriva final media: {drift_metrics['drift_final_mean_m']:.4f} m")
+        print(f"Deriva RMS: {drift_metrics['drift_rms_m']:.4f} m") 
+        print(f"Diferencia longitud trayectoria: {drift_metrics['length_diff_m']:.4f} m")
+        
+        # Añadir métricas de deriva a resultados
+        results.update(drift_metrics)
+        
+    return results
 
-def run_lofo_validation(dataset, model_config, max_families=None, max_samples_per_family=None):
+def calculate_drift_metrics(y_pred_meters, y_test_meters, masks_test):
     """
-    Ejecuta validación Leave-One-Family-Out según el plan del proyecto.
-    Usa familias reagrupadas (4,4b,4c,4d como una sola familia).
+    Calcula métricas de deriva espacial integrando deltas a posiciones.
     
+    Args:
+        y_pred_meters: Predicciones desnormalizadas [batch, time, 3]
+        y_test_meters: Ground truth desnormalizado [batch, time, 3]  
+        masks_test: Máscaras binarias [batch, time]
+        
     Returns:
-        dict: Resultados de LOFO con métricas por familia y promedio
+        dict: Métricas de deriva espacial
     """
-    print("\n=== VALIDACIÓN LEAVE-ONE-FAMILY-OUT (LOFO) ===")
+    # Convertir máscaras a booleano
+    valid_mask = masks_test.astype(bool)
     
-    # Usar familias base reagrupadas en lugar de pasadas individuales
-    family_bases = dataset.get_family_base_list()
-    lofo_results = {}
+    # Aplicar máscaras poniendo a cero los timesteps de padding
+    y_pred_masked = y_pred_meters.copy()
+    y_test_masked = y_test_meters.copy()
     
-    # Limitar familias si se especifica
-    if max_families is not None:
-        family_bases = family_bases[:max_families]
-        print(f"⚠️ Limitando a las primeras {max_families} familias: {family_bases}")
+    for i in range(y_pred_meters.shape[0]):  # Para cada secuencia en el batch
+        for t in range(y_pred_meters.shape[1]):  # Para cada timestep
+            if not valid_mask[i, t]:
+                y_pred_masked[i, t, :] = 0
+                y_test_masked[i, t, :] = 0
     
-    for test_family_base in family_bases:
-        # Obtener todas las pasadas (incluyendo derivadas) de esta familia
-        test_pasadas = dataset.get_pasadas_for_family(test_family_base)
-        
-        print(f"\n--- LOFO Round: Familia {test_family_base} como TEST ---")
-        print(f"  Pasadas incluidas: {test_pasadas}")
-        
-        # Crear split LOFO: una familia completa para test, resto para train
-        (X_train, y_train, masks_train), (X_val, y_val, masks_val), (X_test, y_test, masks_test) = \
-            dataset.create_dataset(test_pasadas=test_pasadas, max_samples=max_samples_per_family)
-        
-        # Skip si no hay suficientes datos para entrenar
-        if X_train.shape[0] < 10:
-            print(f"  ⚠️  Saltando familia {test_family_base}: muy pocos datos de entrenamiento ({X_train.shape[0]})")
-            continue
-            
-        # Skip si no hay suficientes datos para test
-        if X_test.shape[0] < 3:
-            print(f"  ⚠️  Saltando familia {test_family_base}: muy pocos datos de test ({X_test.shape[0]})")
-            continue
-        
-        # Crear modelo para esta ronda
-        model = create_model(sequence_length=X_train.shape[1], n_features=X_train.shape[2])
-        model.compile(
-            optimizer=Adam(learning_rate=model_config['learning_rate']),
-            loss=masked_mae_loss,
-            metrics=['mae']
-        )
-        
-        # Entrenar modelo
-        callbacks = [
-            EarlyStopping(
-                monitor='val_loss',
-                patience=model_config['patience'],
-                restore_best_weights=True,
-                verbose=0
-            ),
-            ReduceLROnPlateau(
-                monitor='val_loss',
-                factor=0.5,
-                patience=7,
-                min_lr=1e-6,
-                verbose=0
-            )
-        ]
-        
-        print(f"  🔄 Entrenando modelo (max {model_config['epochs']} épocas)...")
-        history = model.fit(
-            X_train, y_train,
-            batch_size=model_config['batch_size'],
-            epochs=model_config['epochs'],
-            validation_data=(X_val, y_val),
-            callbacks=callbacks,
-            verbose=1  # Cambiar a verbose=1 para ver el progreso
-        )
-        
-        # Mostrar resumen del entrenamiento
-        final_train_loss = history.history['loss'][-1]
-        final_val_loss = history.history['val_loss'][-1]
-        epochs_trained = len(history.history['loss'])
-        
-        print(f"  ✅ Entrenamiento completado:")
-        print(f"    - Épocas entrenadas: {epochs_trained}/{model_config['epochs']}")
-        print(f"    - Loss final train: {final_train_loss:.6f}")
-        print(f"    - Loss final val: {final_val_loss:.6f}")
-        
-        # Evaluar en familia test
-        metrics = evaluate_model(model, X_test, y_test, masks_test, norm_stats=dataset.norm_stats)
-        lofo_results[test_family_base] = metrics
-        
-        # Usar clave correcta según si tenemos norm_stats o no
-        mae_key = 'mae_total_norm' if 'mae_total_norm' in metrics else 'mae_total'
-        print(f"  Familia {test_family_base} - MAE total: {metrics[mae_key]:.6f}")
+    # Integrar deltas para obtener posiciones (cumsum a lo largo del eje temporal)
+    pos_pred = np.cumsum(y_pred_masked, axis=1)  # [batch, time, 3]
+    pos_true = np.cumsum(y_test_masked, axis=1)  # [batch, time, 3]
     
-    # Calcular estadísticas LOFO usando las claves correctas
-    if not lofo_results:
-        raise ValueError("No se pudo completar ninguna ronda de LOFO válida")
+    # ===== 1. DERIVA FINAL MEDIA =====
+    # Distancia euclidiana entre posiciones finales (último timestep válido por secuencia)
+    final_drifts = []
     
-    first_family_key = list(lofo_results.keys())[0]
-    mae_key = 'mae_total_norm' if 'mae_total_norm' in lofo_results[first_family_key] else 'mae_total'
-    dx_key = 'mae_dx_norm' if 'mae_dx_norm' in lofo_results[first_family_key] else 'mae_dx'
-    dy_key = 'mae_dy_norm' if 'mae_dy_norm' in lofo_results[first_family_key] else 'mae_dy'
-    dz_key = 'mae_dz_norm' if 'mae_dz_norm' in lofo_results[first_family_key] else 'mae_dz'
+    for i in range(pos_pred.shape[0]):
+        # Encontrar último timestep válido para esta secuencia
+        valid_times = np.where(valid_mask[i])[0]
+        if len(valid_times) > 0:
+            last_valid_t = valid_times[-1]
+            # Calcular distancia euclidiana solo en x,y (ignorar z)
+            drift_xy = np.linalg.norm(pos_pred[i, last_valid_t, :2] - pos_true[i, last_valid_t, :2])
+            final_drifts.append(drift_xy)
     
-    valid_families = list(lofo_results.keys())
-    mae_totals = [lofo_results[f][mae_key] for f in valid_families]
-    mae_dx_values = [lofo_results[f][dx_key] for f in valid_families]
-    mae_dy_values = [lofo_results[f][dy_key] for f in valid_families]
-    mae_dz_values = [lofo_results[f][dz_key] for f in valid_families]
+    drift_final_mean_m = np.mean(final_drifts) if final_drifts else 0.0
     
-    lofo_stats = {
-        'individual_results': lofo_results,
-        'summary': {
-            'families_tested': len(valid_families),
-            'mae_total_mean': np.mean(mae_totals),
-            'mae_total_std': np.std(mae_totals),
-            'mae_dx_mean': np.mean(mae_dx_values),
-            'mae_dx_std': np.std(mae_dx_values),
-            'mae_dy_mean': np.mean(mae_dy_values),
-            'mae_dy_std': np.std(mae_dy_values),
-            'mae_dz_mean': np.mean(mae_dz_values),
-            'mae_dz_std': np.std(mae_dz_values),
-        }
+    # ===== 2. DERIVA RMS =====
+    # RMS de distancias euclidianas a lo largo de toda la trayectoria
+    all_drifts = []
+    
+    for i in range(pos_pred.shape[0]):
+        for t in range(pos_pred.shape[1]):
+            if valid_mask[i, t]:
+                # Distancia euclidiana en cada timestep válido (solo x,y)
+                drift_xy = np.linalg.norm(pos_pred[i, t, :2] - pos_true[i, t, :2])
+                all_drifts.append(drift_xy)
+    
+    drift_rms_m = np.sqrt(np.mean(np.array(all_drifts)**2)) if all_drifts else 0.0
+    
+    # ===== 3. DIFERENCIA DE LONGITUD DE TRAYECTORIA =====
+    # Diferencia entre longitudes totales de trayectorias predicha vs verdadera
+    length_diffs = []
+    
+    for i in range(y_pred_meters.shape[0]):
+        # Calcular longitud total de trayectoria predicha
+        pred_lengths = []
+        true_lengths = []
+        
+        for t in range(y_pred_meters.shape[1]):
+            if valid_mask[i, t]:
+                # Norma euclidiana del delta en este timestep (solo x,y)
+                pred_step_length = np.linalg.norm(y_pred_masked[i, t, :2])
+                true_step_length = np.linalg.norm(y_test_masked[i, t, :2])
+                pred_lengths.append(pred_step_length)
+                true_lengths.append(true_step_length)
+        
+        if pred_lengths and true_lengths:
+            total_pred_length = np.sum(pred_lengths)
+            total_true_length = np.sum(true_lengths)
+            length_diff = abs(total_pred_length - total_true_length)
+            length_diffs.append(length_diff)
+    
+    length_diff_m = np.mean(length_diffs) if length_diffs else 0.0
+    
+    return {
+        'drift_final_mean_m': drift_final_mean_m,
+        'drift_rms_m': drift_rms_m,
+        'length_diff_m': length_diff_m
     }
-    
-    print("\n=== RESUMEN LOFO (FAMILIAS REAGRUPADAS) ===")
-    print(f"Familias evaluadas: {lofo_stats['summary']['families_tested']}")
-    print(f"MAE Total: {lofo_stats['summary']['mae_total_mean']:.6f} ± {lofo_stats['summary']['mae_total_std']:.6f}")
-    print(f"MAE dx: {lofo_stats['summary']['mae_dx_mean']:.6f} ± {lofo_stats['summary']['mae_dx_std']:.6f}")
-    print(f"MAE dy: {lofo_stats['summary']['mae_dy_mean']:.6f} ± {lofo_stats['summary']['mae_dy_std']:.6f}")
-    print(f"MAE dz: {lofo_stats['summary']['mae_dz_mean']:.6f} ± {lofo_stats['summary']['mae_dz_std']:.6f}")
-    
-    return lofo_stats
 
-def train_final_model(dataset, model_config, max_samples=None):
+def train_model(dataset, model_config, fast_mode=False):
     """
-    Entrena modelo final con todas las familias según el plan del proyecto.
+    Entrena usando dataset pre-dividido por sets (train/val/test).
+    
+    Args:
+        dataset: GPSTrackDataset
+        model_config: Diccionario con configuración de entrenamiento
+        fast_mode: Si True, reduce datos y épocas para pruebas rápidas
+        
+    Returns:
+        tuple: (model, history, metrics, training_time)
     """
-    print("\n=== ENTRENAMIENTO MODELO FINAL (TODAS LAS FAMILIAS) ===")
+    print("\n=== ENTRENAMIENTO DE RED NEURONAL ===")
     
-    # Usar todas las familias para entrenamiento
-    (X_train, y_train, masks_train), (X_val, y_val, masks_val), (X_test, y_test, masks_test) = \
-        dataset.create_dataset(test_pasadas=None, max_samples=max_samples)  # Split aleatorio para val/test
+    # Cargar datos por sets
+    (X_train, y_train, masks_train), (X_val, y_val, masks_val), (X_test, y_test, masks_test) = dataset.load_by_sets()
     
-    # Crear modelo final
+    # Aplicar limitaciones de modo rápido
+    if fast_mode:
+        print("🚀 MODO RÁPIDO: Limitando datos para pruebas")
+        max_samples = 100
+        
+        if len(X_train) > max_samples:
+            indices = np.random.choice(len(X_train), max_samples, replace=False)
+            X_train = X_train[indices]
+            y_train = y_train[indices]
+            masks_train = masks_train[indices]
+            
+        if len(X_val) > max_samples // 4:
+            indices = np.random.choice(len(X_val), max_samples // 4, replace=False)
+            X_val = X_val[indices]
+            y_val = y_val[indices]
+            masks_val = masks_val[indices]
+            
+        if len(X_test) > max_samples // 4:
+            indices = np.random.choice(len(X_test), max_samples // 4, replace=False)
+            X_test = X_test[indices]
+            y_test = y_test[indices]
+            masks_test = masks_test[indices]
+        
+        print(f"Datos limitados - Train: {X_train.shape[0]}, Val: {X_val.shape[0]}, Test: {X_test.shape[0]}")
+    
+    # Crear modelo
     model = create_model(sequence_length=X_train.shape[1], n_features=X_train.shape[2])
     model.compile(
         optimizer=Adam(learning_rate=model_config['learning_rate']),
-        loss=masked_mae_loss,
+        loss=make_masked_loss(model_config['lambda_traj'], model_config['lambda_bias']),
         metrics=['mae']
     )
     
-    # Callbacks para modelo final
+    print(f"Modelo creado:")
+    print(f"  - Secuencia: {X_train.shape[1]} timesteps")
+    print(f"  - Features: {X_train.shape[2]}")
+    print(f"  - Lambda traj: {model_config['lambda_traj']}")
+    print(f"  - Lambda bias: {model_config['lambda_bias']}")
+    
+    # Crear directorio models si no existe
+    os.makedirs('models', exist_ok=True)
+    
+    # Callbacks
     callbacks = [
         EarlyStopping(
             monitor='val_loss',
@@ -529,7 +549,7 @@ def train_final_model(dataset, model_config, max_samples=None):
             verbose=1
         ),
         ModelCheckpoint(
-            'final_model.h5',
+            'models/model_best.keras',
             monitor='val_loss',
             save_best_only=True,
             verbose=1
@@ -543,8 +563,14 @@ def train_final_model(dataset, model_config, max_samples=None):
         )
     ]
     
-    # Entrenamiento final
+    # Entrenamiento
     start_time = time.time()
+    
+    print(f"\n🔄 Iniciando entrenamiento:")
+    print(f"  - Épocas: {model_config['epochs']}")
+    print(f"  - Batch size: {model_config['batch_size']}")
+    print(f"  - Learning rate: {model_config['learning_rate']}")
+    print(f"  - Patience: {model_config['patience']}")
     
     history = model.fit(
         X_train, y_train,
@@ -557,128 +583,145 @@ def train_final_model(dataset, model_config, max_samples=None):
     
     training_time = time.time() - start_time
     
+    # Mostrar resumen del entrenamiento
+    final_train_loss = history.history['loss'][-1]
+    final_val_loss = history.history['val_loss'][-1]
+    epochs_trained = len(history.history['loss'])
+    
+    print(f"\n✅ Entrenamiento completado:")
+    print(f"  - Épocas entrenadas: {epochs_trained}/{model_config['epochs']}")
+    print(f"  - Tiempo total: {training_time/60:.2f} minutos")
+    print(f"  - Loss final train: {final_train_loss:.6f}")
+    print(f"  - Loss final val: {final_val_loss:.6f}")
+    
     # Graficar historia
-    plot_training_history(history, "final_model_history.png")
+    plot_training_history(history, "training_history.png")
     
-    # Evaluación final
-    final_metrics = evaluate_model(model, X_test, y_test, masks_test, norm_stats=dataset.norm_stats)
+    # Evaluación en test
+    print(f"\n📊 Evaluando en conjunto TEST...")
+    test_metrics = evaluate_model(model, X_test, y_test, masks_test, norm_stats=dataset.norm_stats)
     
-    return model, history, final_metrics, training_time
+    # Guardar modelo final
+    model.save('models/model_final.keras')
+    print(f"Modelo final guardado en: models/model_final.keras")
+    
+    return model, history, test_metrics, training_time
+
+def parse_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Entrenar red neuronal de corrección GPS',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    
+    # Argumentos principales
+    parser.add_argument('--data_root', type=str, default='data/input',
+                        help='Directorio raíz de datos')
+    
+    # Hiperparámetros de entrenamiento
+    parser.add_argument('--epochs', type=int, default=100,
+                        help='Número máximo de épocas')
+    parser.add_argument('--batch_size', type=int, default=64,
+                        help='Tamaño de batch')
+    parser.add_argument('--lr', type=float, default=1e-3,
+                        help='Learning rate inicial')
+    parser.add_argument('--patience', type=int, default=15,
+                        help='Paciencia para early stopping')
+    parser.add_argument('--lambda_traj', type=float, default=1e-4,
+                        help='Peso del término de offset final en la loss')
+    parser.add_argument('--lambda_bias', type=float, default=0.1,
+                        help='Peso del término cero-media en la loss')
+    
+    # Opciones adicionales
+    parser.add_argument('--fast', action='store_true',
+                        help='Modo rápido: reduce épocas y datos para pruebas')
+    
+    return parser.parse_args()
 
 def main():
     """Función principal de entrenamiento."""
     print("=== ENTRENAMIENTO DE RED NEURONAL PARA CORRECCIÓN DE TRACKS GPS ===\n")
     
     try:
-        print("🔍 Iniciando función main()...")
+        # Parse argumentos
+        args = parse_args()
         
-        # =============================
-        # CONFIGURACIÓN DE MODO
-        # =============================
-        # Cambiar FAST_MODE a True para pruebas rápidas
-        FAST_MODE = False  # ← Cambiar aquí entre True (rápido) y False (completo)
+        print(f"Configuración:")
+        print(f"  - Directorio datos: {args.data_root}")
+        print(f"  - Épocas: {args.epochs}")
+        print(f"  - Batch size: {args.batch_size}")
+        print(f"  - Learning rate: {args.lr}")
+        print(f"  - Patience: {args.patience}")
+        print(f"  - Lambda traj: {args.lambda_traj}")
+        print(f"  - Lambda bias: {args.lambda_bias}")
+        print(f"  - Modo rápido: {args.fast}")
         
-        print(f"🔍 FAST_MODE configurado: {FAST_MODE}")
+        # Configuración del modelo
+        model_config = {
+            'epochs': args.epochs,
+            'batch_size': args.batch_size,
+            'learning_rate': args.lr,
+            'patience': args.patience,
+            'lambda_traj': args.lambda_traj,
+            'lambda_bias': args.lambda_bias
+        }
         
-        if FAST_MODE:
-            print("🚀 MODO RÁPIDO ACTIVADO - Solo para pruebas")
-            print("   - Máximo 3 familias LOFO")
-            print("   - 10 épocas por modelo")
-            print("   - 50 ventanas máximo por familia")
-            print("   - Tiempo estimado: 5-10 minutos\n")
-            
-            model_config = {
-                'epochs': 10,           # Pocas épocas
-                'batch_size': 16,       # Batch más pequeño
-                'learning_rate': 1e-3,
-                'patience': 5           # Early stopping más agresivo
-            }
-            MAX_FAMILIES_LOFO = 3      # Solo probar 3 familias
-            MAX_SAMPLES_PER_FAMILY = 50 # Limitar datos por familia
-            
-        else:
-            print("⏳ MODO COMPLETO ACTIVADO - Entrenamiento real")
-            print("   - Todas las 17 familias LOFO")
-            print("   - 100 épocas por modelo") 
-            print("   - Todos los datos disponibles")
-            print("   - Tiempo estimado: 2-4 horas\n")
-            
-            model_config = {
-                'epochs': 100,
-                'batch_size': 64,
-                'learning_rate': 1e-3,
-                'patience': 15
-            }
-            MAX_FAMILIES_LOFO = None   # Todas las familias
-            MAX_SAMPLES_PER_FAMILY = None # Todos los datos
+        # Aplicar limitaciones de modo rápido
+        if args.fast:
+            print(f"\n🚀 MODO RÁPIDO ACTIVADO")
+            model_config['epochs'] = min(model_config['epochs'], 10)
+            model_config['batch_size'] = min(model_config['batch_size'], 16)
+            model_config['patience'] = min(model_config['patience'], 5)
+            print(f"  - Épocas limitadas a: {model_config['epochs']}")
+            print(f"  - Batch size limitado a: {model_config['batch_size']}")
+            print(f"  - Patience limitada a: {model_config['patience']}")
         
-        print(f"🔍 Configuración establecida: {model_config}")
+        # Cargar dataset y entrenar
+        print(f"\n📂 Cargando dataset...")
+        dataset = GPSTrackDataset(data_dir=args.data_root)
         
-        # Cargar dataset
-        print("🔍 Intentando cargar dataset...")
-        dataset = GPSTrackDataset()
-        print("🔍 Dataset cargado exitosamente")
+        print(f"\n🎯 Ejecutando entrenamiento")
+        model, history, test_metrics, training_time = train_model(
+            dataset, model_config, fast_mode=args.fast
+        )
         
-        # Ejecutar validación LOFO como dice el plan
-        print("🔍 Iniciando validación LOFO...")
-        lofo_results = run_lofo_validation(dataset, model_config, MAX_FAMILIES_LOFO, MAX_SAMPLES_PER_FAMILY)
-        print("🔍 LOFO completado exitosamente")
-        
-        # Entrenar modelo final con todas las familias
-        print("🔍 Iniciando entrenamiento del modelo final...")
-        final_model, history, final_metrics, training_time = train_final_model(dataset, model_config, MAX_SAMPLES_PER_FAMILY)
-        print("🔍 Modelo final entrenado exitosamente")
-        
-        # Guardar todos los resultados
-        print("🔍 Guardando resultados...")
-        mode_suffix = "_fast" if FAST_MODE else "_complete"
+        # Guardar resultados
+        mode_suffix = "_fast" if args.fast else "_complete"
         results_file = f'training_results{mode_suffix}.json'
         
-        all_results = {
-            'mode': 'fast' if FAST_MODE else 'complete',
+        results = {
             'config': model_config,
-            'lofo_validation': lofo_results,
-            'final_model': {
-                'training_time_minutes': training_time / 60,
-                'metrics': final_metrics,
-                'config': model_config
-            }
+            'test_metrics': test_metrics,
+            'training_time_minutes': training_time / 60,
+            'epochs_trained': len(history.history['loss']),
+            'final_train_loss': history.history['loss'][-1],
+            'final_val_loss': history.history['val_loss'][-1]
         }
         
         with open(results_file, 'w') as f:
-            json.dump(all_results, f, indent=2)
-        
-        print(f"🔍 Resultados guardados en {results_file}")
+            json.dump(results, f, indent=2)
         
         print(f"\n=== RESULTADOS FINALES ===")
-        print(f"Modo: {'🚀 RÁPIDO' if FAST_MODE else '⏳ COMPLETO'}")
-        print(f"LOFO MAE promedio: {lofo_results['summary']['mae_total_mean']:.6f} ± {lofo_results['summary']['mae_total_std']:.6f}")
-        if 'mae_total_norm' in final_metrics:
-            print(f"Modelo final MAE: {final_metrics['mae_total_norm']:.6f}")
+        print(f"Modo: {'RÁPIDO' if args.fast else 'COMPLETO'}")
+        if 'mae_total_meters' in test_metrics:
+            print(f"MAE total (metros): {test_metrics['mae_total_meters']:.4f} m")
+            if 'drift_final_mean_m' in test_metrics:
+                print(f"Deriva final media: {test_metrics['drift_final_mean_m']:.4f} m")
+                print(f"Deriva RMS: {test_metrics['drift_rms_m']:.4f} m")
         else:
-            print(f"Modelo final MAE: {final_metrics['mae_total']:.6f}")
+            print(f"MAE total (normalizado): {test_metrics['mae_total_norm']:.6f}")
         print(f"Tiempo total: {training_time/60:.2f} minutos")
         print(f"Resultados guardados en: {results_file}")
         
-        if FAST_MODE:
-            print(f"\n💡 Para entrenamiento completo, cambia FAST_MODE = False en línea ~515")
-            
-        print("🔍 Script completado exitosamente")
+        print(f"\n✅ Entrenamiento completado exitosamente")
         
     except Exception as e:
-        print(f"❌ ERROR en main(): {e}")
+        print(f"❌ ERROR: {e}")
         import traceback
         traceback.print_exc()
-        raise
+        return 1
+    
+    return 0
 
 if __name__ == "__main__":
-    print("🔍 Script iniciado - verificando punto de entrada...")
-    try:
-        print("🔍 Llamando a main()...")
-        main()
-        print("🔍 main() completado exitosamente")
-    except Exception as e:
-        print(f"❌ ERROR CRÍTICO en el script: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
+    exit(main())
