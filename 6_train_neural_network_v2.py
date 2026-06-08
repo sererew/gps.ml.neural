@@ -171,99 +171,65 @@ class GPSTrackDataset:
 
 def make_masked_loss(lambda_traj: float, lambda_bias: float, eps: float = 1e-7):
     """
-    Pérdida = MAE_local + lambda_traj * MSE_offset_final + lambda_bias * MSE_zero_mean
-    
-    Args:
-        lambda_traj: Peso del término de offset final
-        lambda_bias: Peso del término cero-media
-        eps: Epsilon para evitar divisiones por cero
-        
-    Returns:
-        Función de pérdida con tres términos
+    Pérdida = MAE_local
+              + lambda_traj * (MSE_offset_final / N_valid)
+              + lambda_bias * (sqrt(N_valid) * MSE_zero_mean)
+
+    Todo en espacio NORMALIZADO.
     """
-    # Crear el contador de steps FUERA de la función de loss para evitar problemas con tf.function
     step_counter = tf.Variable(0, trainable=False, dtype=tf.int64, name='loss_step_counter')
-    
+
     def loss_fn(y_true, y_pred):
-        """
-        - MAE_local: MAE en deltas (dx,dy,dz), enmascarado por timestep.
-        - MSE_offset_final: MSE entre acumulados (cumsum) pred vs true en el ÚLTIMO timestep válido.
-        - MSE_zero_mean: MSE del promedio por ventana del error de deltas (sesgo ≈ 0).
-        """
-        # y_*: [B,T,3]
-        # Construir máscara robusta: 1 si timestep válido, 0 si padding.
-        # Heurístico robusto: considerar padding si |y_true|==0 y añadir eps para no excluir deltas 0 reales.
-        
-        # --- Heurístico robusto (por defecto) ---
-        abs_sum = tf.reduce_sum(tf.abs(y_true), axis=-1, keepdims=True)  # [B,T,1]
-        mask = tf.where(abs_sum > eps, 1.0, 0.0)                         # [B,T,1]
-        # ----------------------------------------
-
-        # # --- Máscara externa (si y_true incluye canal de máscara) ---
-        # y_true_d = y_true[..., :3]
-        # mask = y_true[..., 3:4]
-        # y_true = y_true_d
-        # # ------------------------------------------------------------
-
-        # Aplicar máscara a deltas
+        # --- Máscara ---
+        abs_sum = tf.reduce_sum(tf.abs(y_true), axis=-1, keepdims=True)
+        mask = tf.where(abs_sum > eps, 1.0, 0.0)
         y_true_m = y_true * mask
         y_pred_m = y_pred * mask
 
-        # 1) MAE local enmascarado (promedio por timesteps válidos)
+        # --- 1) MAE local ---
         denom = tf.reduce_sum(mask) + eps
         mae = tf.reduce_sum(tf.abs(y_pred_m - y_true_m)) / denom
 
-        # 2) OFFSET FINAL: cumsum por eje temporal y MSE solo en el último timestep válido
-        true_accum = tf.cumsum(y_true_m, axis=1)  # [B,T,3]
+        # --- 2) Trajectory term (error acumulado normalizado por N_valid) ---
+        true_accum = tf.cumsum(y_true_m, axis=1)
         pred_accum = tf.cumsum(y_pred_m, axis=1)
+        n_valid = tf.reduce_sum(mask, axis=1) + eps  # [B,1]
+        n_valid_s = tf.squeeze(n_valid, axis=1)
 
-        valid_counts = tf.cast(tf.reduce_sum(mask, axis=1, keepdims=True), tf.int32)  # [B,1,1]
-        last_idx = tf.maximum(valid_counts - 1, 0)  # [B,1,1]
+        valid_counts_i = tf.cast(tf.round(n_valid_s), tf.int32)
+        last_idx = tf.maximum(valid_counts_i - 1, 0)
+        b_inds = tf.range(tf.shape(y_true)[0], dtype=tf.int32)
+        idx = tf.stack([b_inds, last_idx], axis=1)
 
-        # indices para gather_nd: [B, 2] -> (b, t_last)
-        B = tf.shape(y_true)[0]
-        b_inds = tf.range(B)[:, None]
-        t_inds = tf.squeeze(last_idx, axis=[1,2])[:, None]
-        idx = tf.concat([b_inds, t_inds], axis=1)  # [B,2]
+        true_final = tf.gather_nd(true_accum, idx)
+        pred_final = tf.gather_nd(pred_accum, idx)
+        se_final_per = tf.reduce_sum(tf.square(pred_final - true_final), axis=-1)
+        traj_term = tf.reduce_mean(se_final_per / n_valid_s)
 
-        true_final = tf.gather_nd(true_accum, idx)  # [B,3]
-        pred_final = tf.gather_nd(pred_accum, idx)  # [B,3]
-
-        mse_final = tf.reduce_mean(tf.reduce_sum(tf.square(pred_final - true_final), axis=-1))
-
-        # 3) CERO-MEDIA: error medio de deltas por ventana (sesgo)
-        # mean_error = mean_t( y_pred - y_true ) en timesteps válidos
-        # Usamos promedio ponderado por máscara para evitar padding
-        # sum_t(err * mask) / sum_t(mask)
+        # --- 3) Bias term (error medio por ventana, escalado por sqrt(N)) ---
         err = (y_pred - y_true) * mask
-        sum_err = tf.reduce_sum(err, axis=1)             # [B,3]
-        sum_m = tf.reduce_sum(mask, axis=1) + eps        # [B,1]
-        mean_err = sum_err / sum_m                       # [B,3]
-        mse_bias = tf.reduce_mean(tf.reduce_sum(tf.square(mean_err), axis=-1))
+        sum_err = tf.reduce_sum(err, axis=1)              # [B,3]
+        mean_err = sum_err / n_valid                      # [B,3]
+        se_bias_per = tf.reduce_sum(tf.square(mean_err), axis=-1)  # [B]
+        bias_term = tf.reduce_mean(se_bias_per * tf.sqrt(n_valid_s))
 
-        # Pérdida total
-        total_loss = mae + lambda_traj * mse_final + lambda_bias * mse_bias
-        
-        # ===== MONITOREO SIMPLIFICADO =====
-        # Incrementar contador
+        # --- Pérdida total ---
+        total_loss = mae + lambda_traj * traj_term + lambda_bias * bias_term
+
+        # --- Logging ---
         step_counter.assign_add(1)
-        
-        # Calcular términos ponderados para logging ocasional
-        weighted_traj = lambda_traj * mse_final
-        weighted_bias = lambda_bias * mse_bias
-        
-        # Print directo sin condicionales para evitar problemas con tf.function
-        # TensorFlow optimizará automáticamente la frecuencia durante el entrenamiento
-        tf.print("Step:", step_counter, 
-                  "Local:", tf.round(mae * 1000000) / 1000000,
-                  "TrajFinal:", tf.round(mse_final * 1000000) / 1000000,
-                  "Bias:", tf.round(mse_bias * 1000000) / 1000000,
-                  "Lambda*TrajFinal:", tf.round(weighted_traj * 1000000) / 1000000,
-                  "Lambda*Bias:", tf.round(weighted_bias * 1000000) / 1000000,
-                  "Total:", tf.round(total_loss * 1000000) / 1000000,
-                  "ValidMask:", tf.round(tf.reduce_sum(mask)),
-                  summarize=-1)
-
+        tf.print(
+            "Step:", step_counter,
+            "Local:", tf.round(mae * 1e6) / 1e6,
+            "Traj(norm):", tf.round(traj_term * 1e6) / 1e6,
+            "Bias(norm):", tf.round(bias_term * 1e6) / 1e6,
+            "λ*Traj:", tf.round(lambda_traj * traj_term * 1e6) / 1e6,
+            "λ*Bias:", tf.round(lambda_bias * bias_term * 1e6) / 1e6,
+            "Total:", tf.round(total_loss * 1e6) / 1e6,
+            "ValidMask:", tf.round(tf.reduce_sum(mask)),
+            output_stream="file://training_loss.log",
+            summarize=-1
+        )
         return total_loss
 
     return loss_fn
@@ -627,7 +593,7 @@ def parse_args():
                         help='Learning rate inicial')
     parser.add_argument('--patience', type=int, default=15,
                         help='Paciencia para early stopping')
-    parser.add_argument('--lambda_traj', type=float, default=1e-4,
+    parser.add_argument('--lambda_traj', type=float, default=1.0,
                         help='Peso del término de offset final en la loss')
     parser.add_argument('--lambda_bias', type=float, default=0.1,
                         help='Peso del término cero-media en la loss')

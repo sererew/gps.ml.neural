@@ -1,213 +1,27 @@
 {
-  "mode": "complete",
   "config": {
     "epochs": 100,
-    "batch_size": 32,
+    "batch_size": 64,
     "learning_rate": 0.001,
-    "patience": 15
+    "patience": 15,
+    "lambda_traj": 1.0,
+    "lambda_bias": 0.1
   },
-  "lofo_validation": {
-    "individual_results": {
-      "1": {
-        "mae_dx_norm": 0.21509668671777193,
-        "mae_dy_norm": 0.20486293656698182,
-        "mae_dz_norm": 0.35988313210820655,
-        "mae_total_norm": 0.25994758513098676,
-        "mae_dx_meters": 0.36000698227565386,
-        "mae_dy_meters": 0.37386926841109586,
-        "mae_dz_meters": 0.11249546579762311,
-        "mae_total_meters": 0.282123905494791
-      },
-      "10": {
-        "mae_dx_norm": 0.1460557793252397,
-        "mae_dy_norm": 0.12522516375727388,
-        "mae_dz_norm": 0.11293583113141238,
-        "mae_total_norm": 0.12807225807130865,
-        "mae_dx_meters": 0.24445332713125703,
-        "mae_dy_meters": 0.22853249685271032,
-        "mae_dz_meters": 0.03530248463197026,
-        "mae_total_meters": 0.16942943620531256
-      },
-      "11": {
-        "mae_dx_norm": 0.15569645634381962,
-        "mae_dy_norm": 0.1253947188119762,
-        "mae_dz_norm": 0.1031225694863347,
-        "mae_total_norm": 0.1280712482140435,
-        "mae_dx_meters": 0.2605889105076298,
-        "mae_dy_meters": 0.22884193148221357,
-        "mae_dz_meters": 0.0322349681888769,
-        "mae_total_meters": 0.17388860339290677
-      },
-      "12": {
-        "mae_dx_norm": 0.4985152075340177,
-        "mae_dy_norm": 0.46946963451621276,
-        "mae_dz_norm": 0.23204572943912685,
-        "mae_total_norm": 0.4000101904964524,
-        "mae_dx_meters": 0.8343641170862444,
-        "mae_dy_meters": 0.8567692756124443,
-        "mae_dz_meters": 0.07253491402500412,
-        "mae_total_meters": 0.5878894355745642
-      },
-      "13": {
-        "mae_dx_norm": 0.5737248994900855,
-        "mae_dy_norm": 0.7122933714422406,
-        "mae_dz_norm": 0.3569835151461295,
-        "mae_total_norm": 0.5476672620261519,
-        "mae_dx_meters": 0.9602424578981904,
-        "mae_dy_meters": 1.2999159575530936,
-        "mae_dz_meters": 0.11158907658382798,
-        "mae_total_meters": 0.7905824973450374
-      },
-      "14": {
-        "mae_dx_norm": 0.09846016162855525,
-        "mae_dy_norm": 0.08899989682287081,
-        "mae_dz_norm": 0.1644954528167544,
-        "mae_total_norm": 0.11731850375606016,
-        "mae_dx_meters": 0.16479261479176885,
-        "mae_dy_meters": 0.16242238270244577,
-        "mae_dz_meters": 0.051419449119160555,
-        "mae_total_meters": 0.1262114822044584
-      },
-      "15": {
-        "mae_dx_norm": 0.11244707233600307,
-        "mae_dy_norm": 0.10219708084127284,
-        "mae_dz_norm": 0.31231180927933655,
-        "mae_total_norm": 0.17565198748553748,
-        "mae_dx_meters": 0.18820248694060215,
-        "mae_dy_meters": 0.1865068837692208,
-        "mae_dz_meters": 0.09762519828112726,
-        "mae_total_meters": 0.15744485633031674
-      },
-      "16": {
-        "mae_dx_norm": 0.6617494737018358,
-        "mae_dy_norm": 0.5864327388244509,
-        "mae_dz_norm": 0.5931571049208368,
-        "mae_total_norm": 0.6137797724823745,
-        "mae_dx_meters": 1.1075690387924566,
-        "mae_dy_meters": 1.070223740550671,
-        "mae_dz_meters": 0.1854143149453464,
-        "mae_total_meters": 0.787735698096158
-      },
-      "17": {
-        "mae_dx_norm": 0.697184313889214,
-        "mae_dy_norm": 0.6370162319703543,
-        "mae_dz_norm": 0.7026072259661473,
-        "mae_total_norm": 0.6789359239419053,
-        "mae_dx_meters": 1.1668762753458601,
-        "mae_dy_meters": 1.1625372214927192,
-        "mae_dz_meters": 0.2196272056274669,
-        "mae_total_meters": 0.8496802341553488
-      },
-      "2": {
-        "mae_dx_norm": 0.1384092779262478,
-        "mae_dy_norm": 0.13278470669200798,
-        "mae_dz_norm": 0.0961172555848055,
-        "mae_total_norm": 0.1224370800676871,
-        "mae_dx_meters": 0.23165538541552905,
-        "mae_dy_meters": 0.24232845939151076,
-        "mae_dz_meters": 0.030045185138816845,
-        "mae_total_meters": 0.16800967664861888
-      },
-      "3": {
-        "mae_dx_norm": 0.13997712045260116,
-        "mae_dy_norm": 0.13669205350613886,
-        "mae_dz_norm": 0.09505105870795424,
-        "mae_total_norm": 0.12390674422223143,
-        "mae_dx_meters": 0.23427948365024528,
-        "mae_dy_meters": 0.24945926251809916,
-        "mae_dz_meters": 0.0297119038101269,
-        "mae_total_meters": 0.17115021665949046
-      },
-      "4": {
-        "mae_dx_norm": 0.06825667099545768,
-        "mae_dy_norm": 0.0580300560217399,
-        "mae_dz_norm": 0.19384274059583664,
-        "mae_total_norm": 0.10670982253767806,
-        "mae_dx_meters": 0.11424108453440762,
-        "mae_dy_meters": 0.10590326796619058,
-        "mae_dz_meters": 0.06059308539457053,
-        "mae_total_meters": 0.09357914596505625
-      },
-      "5": {
-        "mae_dx_norm": 0.3557637358576582,
-        "mae_dy_norm": 0.337040563821535,
-        "mae_dz_norm": 0.19953008315486248,
-        "mae_total_norm": 0.29744479427801856,
-        "mae_dx_meters": 0.5954411994016433,
-        "mae_dy_meters": 0.615089834056968,
-        "mae_dz_meters": 0.06237088453522982,
-        "mae_total_meters": 0.4243006393312804
-      },
-      "6": {
-        "mae_dx_norm": 0.29218103285272357,
-        "mae_dy_norm": 0.2758187163057421,
-        "mae_dz_norm": 0.20064127225165795,
-        "mae_total_norm": 0.2562136738033745,
-        "mae_dx_meters": 0.4890229329842723,
-        "mae_dy_meters": 0.5033616369764844,
-        "mae_dz_meters": 0.06271823005173406,
-        "mae_total_meters": 0.35170093333749697
-      },
-      "7": {
-        "mae_dx_norm": 0.13728953504959773,
-        "mae_dy_norm": 0.12861208421173473,
-        "mae_dz_norm": 0.09614152869122784,
-        "mae_total_norm": 0.1206810493175201,
-        "mae_dx_meters": 0.22978127539151735,
-        "mae_dy_meters": 0.23471353670555822,
-        "mae_dz_meters": 0.03005277260535284,
-        "mae_total_meters": 0.16484919490080946
-      },
-      "8": {
-        "mae_dx_norm": 0.1283821453980609,
-        "mae_dy_norm": 0.11707443856446823,
-        "mae_dz_norm": 0.09182283777996222,
-        "mae_total_norm": 0.11242647391416379,
-        "mae_dx_meters": 0.2148729932482243,
-        "mae_dy_meters": 0.21365764612668153,
-        "mae_dz_meters": 0.0287027979002423,
-        "mae_total_meters": 0.1524111457583827
-      },
-      "9": {
-        "mae_dx_norm": 0.1344694675441034,
-        "mae_dy_norm": 0.13526574201654484,
-        "mae_dz_norm": 0.09662916384226702,
-        "mae_total_norm": 0.12212145780097176,
-        "mae_dx_meters": 0.22506133581482107,
-        "mae_dy_meters": 0.24685627437539823,
-        "mae_dz_meters": 0.030205201969878998,
-        "mae_total_meters": 0.16737427072003275
-      }
-    },
-    "summary": {
-      "families_tested": 17,
-      "mae_total_mean": 0.2536115192674392,
-      "mae_total_std": 0.18584767921737158,
-      "mae_dx_mean": 0.26786229629664665,
-      "mae_dx_std": 0.20362034535754348,
-      "mae_dy_mean": 0.2572476549819733,
-      "mae_dy_std": 0.2060979774386296,
-      "mae_dz_mean": 0.23572460652369756,
-      "mae_dz_std": 0.17532867860820942
-    }
+  "test_metrics": {
+    "mae_dx_norm": 0.4761720794973439,
+    "mae_dy_norm": 0.4027202086500207,
+    "mae_dz_norm": 0.46135843320662256,
+    "mae_total_norm": 0.44675024045132905,
+    "mae_dx_meters": 0.731810799876901,
+    "mae_dy_meters": 0.7091864857630729,
+    "mae_dz_meters": 0.13500847796493756,
+    "mae_total_meters": 0.5253352545349704,
+    "drift_final_mean_m": 621.1857540839546,
+    "drift_rms_m": 1007.7491733051527,
+    "length_diff_m": 1471.4606048521157
   },
-  "final_model": {
-    "training_time_minutes": 66.08410285313924,
-    "metrics": {
-      "mae_dx_norm": 0.17440368959979993,
-      "mae_dy_norm": 0.15732703873502443,
-      "mae_dz_norm": 0.2459286213947709,
-      "mae_total_norm": 0.19255311657653174,
-      "mae_dx_meters": 0.2918991798480713,
-      "mae_dy_meters": 0.28711755228453245,
-      "mae_dz_meters": 0.07687455214746579,
-      "mae_total_meters": 0.2186304280933565
-    },
-    "config": {
-      "epochs": 100,
-      "batch_size": 32,
-      "learning_rate": 0.001,
-      "patience": 15
-    }
-  }
+  "training_time_minutes": 13.348450458049774,
+  "epochs_trained": 31,
+  "final_train_loss": 4.462884902954102,
+  "final_val_loss": 1.5403002500534058
 }
