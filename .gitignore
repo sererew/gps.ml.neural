@@ -123,3 +123,10 @@ $RECYCLE.BIN/
 .directory
 .Trash-*
 .nfs*
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Generated outputs
+results/

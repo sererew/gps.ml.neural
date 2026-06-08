@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
-Script de prueba para validar las funciones de conversión de coordenadas
-y cálculo/integración de deltas del filtro neuronal.
+Script de prueba para validar las funciones de conversiÃ³n de coordenadas
+y cÃ¡lculo/integraciÃ³n de deltas del filtro neuronal.
 """
 
 import numpy as np
@@ -9,15 +9,16 @@ import pandas as pd
 import sys
 import os
 
-# Añadir el directorio actual al path para importar las funciones
-sys.path.append('.')
+# Anadir python/filters al path para importar las funciones
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parents[1] / 'filters'))
 
 from importlib import import_module
 nn_filter = import_module('7_nn_filter')
 
 def test_coordinate_conversion():
-    """Prueba la conversión lat/lon <-> metros."""
-    print("=== TEST: Conversión de coordenadas ===")
+    """Prueba la conversiÃ³n lat/lon <-> metros."""
+    print("=== TEST: ConversiÃ³n de coordenadas ===")
     
     # Coordenadas de prueba (Madrid aproximadamente)
     lat_ref, lon_ref = 40.4168, -3.7038
@@ -51,8 +52,8 @@ def test_coordinate_conversion():
         print()
 
 def test_delta_integration():
-    """Prueba el cálculo e integración de deltas."""
-    print("=== TEST: Cálculo e integración de deltas ===")
+    """Prueba el cÃ¡lculo e integraciÃ³n de deltas."""
+    print("=== TEST: CÃ¡lculo e integraciÃ³n de deltas ===")
     
     # Coordenadas de prueba: cuadrado de 100m x 100m
     x_orig = np.array([0, 100, 100, 0, 0])  # cuadrado
@@ -69,7 +70,7 @@ def test_delta_integration():
     
     print("Deltas calculados:")
     for i in range(len(dx)):
-        print(f"  ΔP{i}: dx={dx[i]:6.1f}, dy={dy[i]:6.1f}, dz={dz[i]:6.1f}")
+        print(f"  Î”P{i}: dx={dx[i]:6.1f}, dy={dy[i]:6.1f}, dz={dz[i]:6.1f}")
     print()
     
     # Integrar deltas para recuperar coordenadas
@@ -85,18 +86,18 @@ def test_delta_integration():
     y_error = np.abs(y_orig - y_recov) 
     z_error = np.abs(z_orig - z_recov)
     
-    print("Errores de recuperación:")
+    print("Errores de recuperaciÃ³n:")
     for i in range(len(x_error)):
         print(f"  E{i}: x={x_error[i]:6.3f}, y={y_error[i]:6.3f}, z={z_error[i]:6.3f}")
     print()
     
     max_error = max(np.max(x_error), np.max(y_error), np.max(z_error))
-    print(f"Error máximo: {max_error:.6f} metros")
+    print(f"Error mÃ¡ximo: {max_error:.6f} metros")
     
     if max_error < 1e-10:
-        print("✅ Integración de deltas: CORRECTA")
+        print("âœ… IntegraciÃ³n de deltas: CORRECTA")
     else:
-        print("❌ Integración de deltas: ERROR")
+        print("âŒ IntegraciÃ³n de deltas: ERROR")
     
     return max_error < 1e-10
 
@@ -104,11 +105,11 @@ def test_full_pipeline():
     """Prueba el pipeline completo: lat/lon -> deltas -> filtro simulado -> vuelta."""
     print("=== TEST: Pipeline completo ===")
     
-    # Track de prueba: línea recta de 1km
+    # Track de prueba: lÃ­nea recta de 1km
     lat_ref, lon_ref = 40.4168, -3.7038
     n_points = 100
     
-    # Crear track sintético (línea recta hacia el norte)
+    # Crear track sintÃ©tico (lÃ­nea recta hacia el norte)
     lat_track = np.linspace(lat_ref, lat_ref + 0.01, n_points)  # ~1km al norte
     lon_track = np.full(n_points, lon_ref)
     ele_track = np.linspace(100, 200, n_points)  # subida gradual
@@ -144,20 +145,20 @@ def test_full_pipeline():
     print("Errores en el pipeline completo:")
     print(f"  Latitud: max={np.max(lat_errors):.3f}m, mean={np.mean(lat_errors):.6f}m")
     print(f"  Longitud: max={np.max(lon_errors):.3f}m, mean={np.mean(lon_errors):.6f}m") 
-    print(f"  Elevación: max={np.max(ele_errors):.3f}m, mean={np.mean(ele_errors):.6f}m")
+    print(f"  ElevaciÃ³n: max={np.max(ele_errors):.3f}m, mean={np.mean(ele_errors):.6f}m")
     print()
     
     total_error = np.max([np.max(lat_errors), np.max(lon_errors), np.max(ele_errors)])
     
     if total_error < 0.01:  # Error menor a 1cm
-        print("✅ Pipeline completo: CORRECTO")
+        print("âœ… Pipeline completo: CORRECTO")
         return True
     else:
-        print("❌ Pipeline completo: ERROR")
+        print("âŒ Pipeline completo: ERROR")
         return False
 
 if __name__ == "__main__":
-    print("Ejecutando tests de validación del filtro neuronal...")
+    print("Ejecutando tests de validaciÃ³n del filtro neuronal...")
     print("=" * 60)
     print()
     
@@ -172,11 +173,12 @@ if __name__ == "__main__":
         print()
         
         if delta_ok and pipeline_ok:
-            print("🎉 Todos los tests PASARON. El filtro debería funcionar correctamente.")
+            print("ðŸŽ‰ Todos los tests PASARON. El filtro deberÃ­a funcionar correctamente.")
         else:
-            print("⚠️  Algunos tests FALLARON. Revisar las funciones.")
+            print("âš ï¸  Algunos tests FALLARON. Revisar las funciones.")
             
     except Exception as e:
-        print(f"❌ Error ejecutando tests: {e}")
+        print(f"âŒ Error ejecutando tests: {e}")
         import traceback
         traceback.print_exc()
+

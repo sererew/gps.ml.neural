@@ -1,14 +1,14 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
-Script para entrenar la red neuronal de corrección de tracks GPS.
+Script para entrenar la red neuronal de correcciÃ³n de tracks GPS.
 
 La red toma como entrada secuencias de deltas (dx, dy, dz) de grabaciones ruidosas
-y aprende a predecir los deltas del track patrón limpio correspondiente.
+y aprende a predecir los deltas del track patrÃ³n limpio correspondiente.
 
 Arquitectura:
 - LSTM(128) con return_sequences=True
-- Dense(64) con activación ReLU  
-- Output(3) con activación lineal para (dx, dy, dz)
+- Dense(64) con activaciÃ³n ReLU  
+- Output(3) con activaciÃ³n lineal para (dx, dy, dz)
 
 Entrada: [batch, time, features] donde features = [dx, dy, dz]
 Salida: [batch, time, features] donde features = [dx_pred, dy_pred, dz_pred]
@@ -23,6 +23,7 @@ import os
 import sys
 import time
 import argparse
+import random
 from pathlib import Path
 import matplotlib.pyplot as plt
 
@@ -34,7 +35,7 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLRO
 from tensorflow.keras.losses import MeanAbsoluteError, Huber
 import tensorflow.keras.backend as K
 
-# Configuración de GPU si está disponible
+# ConfiguraciÃ³n de GPU si estÃ¡ disponible
 physical_devices = tf.config.list_physical_devices('GPU')
 if len(physical_devices) > 0:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
@@ -48,7 +49,7 @@ class GPSTrackDataset:
     def __init__(self, data_dir="data/input"):
         self.data_dir = Path(data_dir)
         
-        # Rutas de manifests por set y estadísticas de normalización
+        # Rutas de manifests por set y estadÃ­sticas de normalizaciÃ³n
         self.train_manifest_path = self.data_dir / "train" / "manifest_train.csv"
         self.val_manifest_path = self.data_dir / "val" / "manifest_val.csv"
         self.test_manifest_path = self.data_dir / "test" / "manifest_test.csv"
@@ -66,7 +67,7 @@ class GPSTrackDataset:
         if missing_files:
             raise FileNotFoundError(f"Archivos faltantes: {missing_files}")
         
-        # Cargar estadísticas de normalización
+        # Cargar estadÃ­sticas de normalizaciÃ³n
         with open(self.norm_stats_path, 'r') as f:
             self.norm_stats = json.load(f)
         
@@ -114,7 +115,7 @@ class GPSTrackDataset:
         if len(X_train) == 0:
             raise ValueError("No se pudieron cargar datos de entrenamiento. Revise las rutas en manifest_train.csv")
         if len(X_val) == 0:
-            raise ValueError("No se pudieron cargar datos de validación. Revise las rutas en manifest_val.csv")
+            raise ValueError("No se pudieron cargar datos de validaciÃ³n. Revise las rutas en manifest_val.csv")
         if len(X_test) == 0:
             raise ValueError("No se pudieron cargar datos de test. Revise las rutas en manifest_test.csv")
         
@@ -123,7 +124,7 @@ class GPSTrackDataset:
         return (X_train, y_train, masks_train), (X_val, y_val, masks_val), (X_test, y_test, masks_test)
 
     def load_window_data(self, row):
-        """Carga datos de una ventana específica."""
+        """Carga datos de una ventana especÃ­fica."""
         def _to_path(p):
             if pd.isna(p) or str(p) == '':
                 return Path(p)
@@ -133,15 +134,15 @@ class GPSTrackDataset:
         slice_path = _to_path(row['slice_path'])
         input_data = pd.read_csv(slice_path)
         
-        # Cargar datos de etiquetas (patrón limpio)
+        # Cargar datos de etiquetas (patrÃ³n limpio)
         label_path = _to_path(row['label_path'])
         label_data = pd.read_csv(label_path)
         
-        # Cargar máscara
+        # Cargar mÃ¡scara
         mask_path = _to_path(row['mask_path'])
         mask_data = pd.read_csv(mask_path)
         
-        # Extraer características (dx, dy, dz)
+        # Extraer caracterÃ­sticas (dx, dy, dz)
         input_features = input_data[['dx', 'dy', 'dz']].values
         label_features = label_data[['dx', 'dy', 'dz']].values
         mask_values = mask_data['mask'].values
@@ -171,8 +172,8 @@ class GPSTrackDataset:
 
 def make_masked_loss(lambda_traj: float, lambda_bias: float, eps: float = 1e-7):
     """
-    Pérdida = MAE_local
-              + lambda_traj * (MSE_offset_final / N_valid)
+    PÃ©rdida = MAE_local
+              + lambda_traj * MSE_trayectoria_acumulada
               + lambda_bias * (sqrt(N_valid) * MSE_zero_mean)
 
     Todo en espacio NORMALIZADO.
@@ -180,7 +181,7 @@ def make_masked_loss(lambda_traj: float, lambda_bias: float, eps: float = 1e-7):
     step_counter = tf.Variable(0, trainable=False, dtype=tf.int64, name='loss_step_counter')
 
     def loss_fn(y_true, y_pred):
-        # --- Máscara ---
+        # --- MÃ¡scara ---
         abs_sum = tf.reduce_sum(tf.abs(y_true), axis=-1, keepdims=True)
         mask = tf.where(abs_sum > eps, 1.0, 0.0)
         y_true_m = y_true * mask
@@ -190,21 +191,15 @@ def make_masked_loss(lambda_traj: float, lambda_bias: float, eps: float = 1e-7):
         denom = tf.reduce_sum(mask) + eps
         mae = tf.reduce_sum(tf.abs(y_pred_m - y_true_m)) / denom
 
-        # --- 2) Trajectory term (error acumulado normalizado por N_valid) ---
+        # --- 2) Trajectory term: error de toda la trayectoria acumulada ---
         true_accum = tf.cumsum(y_true_m, axis=1)
         pred_accum = tf.cumsum(y_pred_m, axis=1)
         n_valid = tf.reduce_sum(mask, axis=1) + eps  # [B,1]
         n_valid_s = tf.squeeze(n_valid, axis=1)
 
-        valid_counts_i = tf.cast(tf.round(n_valid_s), tf.int32)
-        last_idx = tf.maximum(valid_counts_i - 1, 0)
-        b_inds = tf.range(tf.shape(y_true)[0], dtype=tf.int32)
-        idx = tf.stack([b_inds, last_idx], axis=1)
-
-        true_final = tf.gather_nd(true_accum, idx)
-        pred_final = tf.gather_nd(pred_accum, idx)
-        se_final_per = tf.reduce_sum(tf.square(pred_final - true_final), axis=-1)
-        traj_term = tf.reduce_mean(se_final_per / n_valid_s)
+        accum_err = (pred_accum - true_accum) * mask
+        se_accum_per_window = tf.reduce_sum(tf.square(accum_err), axis=[1, 2])
+        traj_term = tf.reduce_mean(se_accum_per_window / n_valid_s)
 
         # --- 3) Bias term (error medio por ventana, escalado por sqrt(N)) ---
         err = (y_pred - y_true) * mask
@@ -213,7 +208,7 @@ def make_masked_loss(lambda_traj: float, lambda_bias: float, eps: float = 1e-7):
         se_bias_per = tf.reduce_sum(tf.square(mean_err), axis=-1)  # [B]
         bias_term = tf.reduce_mean(se_bias_per * tf.sqrt(n_valid_s))
 
-        # --- Pérdida total ---
+        # --- PÃ©rdida total ---
         total_loss = mae + lambda_traj * traj_term + lambda_bias * bias_term
 
         # --- Logging ---
@@ -223,8 +218,8 @@ def make_masked_loss(lambda_traj: float, lambda_bias: float, eps: float = 1e-7):
             "Local:", tf.round(mae * 1e6) / 1e6,
             "Traj(norm):", tf.round(traj_term * 1e6) / 1e6,
             "Bias(norm):", tf.round(bias_term * 1e6) / 1e6,
-            "λ*Traj:", tf.round(lambda_traj * traj_term * 1e6) / 1e6,
-            "λ*Bias:", tf.round(lambda_bias * bias_term * 1e6) / 1e6,
+            "Î»*Traj:", tf.round(lambda_traj * traj_term * 1e6) / 1e6,
+            "Î»*Bias:", tf.round(lambda_bias * bias_term * 1e6) / 1e6,
             "Total:", tf.round(total_loss * 1e6) / 1e6,
             "ValidMask:", tf.round(tf.reduce_sum(mask)),
             output_stream="file://training_loss.log",
@@ -247,7 +242,7 @@ def create_model(sequence_length=3600, n_features=3):
         Dense(64, activation='relu'),
         Dropout(0.2),
         
-        # Capa de salida con 3 neuronas (dx, dy, dz) y activación lineal
+        # Capa de salida con 3 neuronas (dx, dy, dz) y activaciÃ³n lineal
         Dense(n_features, activation='linear')
     ])
     
@@ -266,7 +261,7 @@ def plot_training_history(history, save_path="training_history.png"):
     ax1.legend()
     ax1.grid(True)
     
-    # Learning rate si está disponible
+    # Learning rate si estÃ¡ disponible
     if 'lr' in history.history:
         ax2.plot(history.history['lr'], label='Learning Rate')
         ax2.set_title('Learning Rate')
@@ -281,16 +276,16 @@ def plot_training_history(history, save_path="training_history.png"):
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches='tight')
     plt.close()
-    print(f"Gráfico guardado en: {save_path}")
+    print(f"GrÃ¡fico guardado en: {save_path}")
 
 def evaluate_model(model, X_test, y_test, masks_test, norm_stats=None):
-    """Evalúa el modelo y calcula métricas incluyendo deriva espacial."""
-    print("\n=== EVALUACIÓN DEL MODELO ===")
+    """EvalÃºa el modelo y calcula mÃ©tricas incluyendo deriva espacial."""
+    print("\n=== EVALUACIÃ“N DEL MODELO ===")
     
     # Predicciones
     y_pred = model.predict(X_test, batch_size=32, verbose=1)
     
-    # Aplicar máscaras para calcular métricas solo en posiciones válidas
+    # Aplicar mÃ¡scaras para calcular mÃ©tricas solo en posiciones vÃ¡lidas
     valid_positions = masks_test.astype(bool)
     
     # MAE en valores normalizados
@@ -312,7 +307,7 @@ def evaluate_model(model, X_test, y_test, masks_test, norm_stats=None):
         'mae_total_norm': mae_total_norm
     }
     
-    # Si tenemos estadísticas de normalización, calcular métricas en metros reales
+    # Si tenemos estadÃ­sticas de normalizaciÃ³n, calcular mÃ©tricas en metros reales
     if norm_stats:
         # Desnormalizar predicciones y valores reales
         y_pred_meters = y_pred.copy()
@@ -344,37 +339,37 @@ def evaluate_model(model, X_test, y_test, masks_test, norm_stats=None):
             'mae_total_meters': mae_total_meters
         })
         
-        # ===== MÉTRICAS DE DERIVA ESPACIAL =====
-        print(f"\n=== MÉTRICAS DE DERIVA ESPACIAL ===")
+        # ===== MÃ‰TRICAS DE DERIVA ESPACIAL =====
+        print(f"\n=== MÃ‰TRICAS DE DERIVA ESPACIAL ===")
         
-        # Aplicar máscaras para integrar solo timesteps válidos
+        # Aplicar mÃ¡scaras para integrar solo timesteps vÃ¡lidos
         drift_metrics = calculate_drift_metrics(y_pred_meters, y_test_meters, masks_test)
         
         print(f"Deriva final media: {drift_metrics['drift_final_mean_m']:.4f} m")
         print(f"Deriva RMS: {drift_metrics['drift_rms_m']:.4f} m") 
         print(f"Diferencia longitud trayectoria: {drift_metrics['length_diff_m']:.4f} m")
         
-        # Añadir métricas de deriva a resultados
+        # AÃ±adir mÃ©tricas de deriva a resultados
         results.update(drift_metrics)
         
     return results
 
 def calculate_drift_metrics(y_pred_meters, y_test_meters, masks_test):
     """
-    Calcula métricas de deriva espacial integrando deltas a posiciones.
+    Calcula mÃ©tricas de deriva espacial integrando deltas a posiciones.
     
     Args:
         y_pred_meters: Predicciones desnormalizadas [batch, time, 3]
         y_test_meters: Ground truth desnormalizado [batch, time, 3]  
-        masks_test: Máscaras binarias [batch, time]
+        masks_test: MÃ¡scaras binarias [batch, time]
         
     Returns:
-        dict: Métricas de deriva espacial
+        dict: MÃ©tricas de deriva espacial
     """
-    # Convertir máscaras a booleano
+    # Convertir mÃ¡scaras a booleano
     valid_mask = masks_test.astype(bool)
     
-    # Aplicar máscaras poniendo a cero los timesteps de padding
+    # Aplicar mÃ¡scaras poniendo a cero los timesteps de padding
     y_pred_masked = y_pred_meters.copy()
     y_test_masked = y_test_meters.copy()
     
@@ -389,11 +384,11 @@ def calculate_drift_metrics(y_pred_meters, y_test_meters, masks_test):
     pos_true = np.cumsum(y_test_masked, axis=1)  # [batch, time, 3]
     
     # ===== 1. DERIVA FINAL MEDIA =====
-    # Distancia euclidiana entre posiciones finales (último timestep válido por secuencia)
+    # Distancia euclidiana entre posiciones finales (Ãºltimo timestep vÃ¡lido por secuencia)
     final_drifts = []
     
     for i in range(pos_pred.shape[0]):
-        # Encontrar último timestep válido para esta secuencia
+        # Encontrar Ãºltimo timestep vÃ¡lido para esta secuencia
         valid_times = np.where(valid_mask[i])[0]
         if len(valid_times) > 0:
             last_valid_t = valid_times[-1]
@@ -410,7 +405,7 @@ def calculate_drift_metrics(y_pred_meters, y_test_meters, masks_test):
     for i in range(pos_pred.shape[0]):
         for t in range(pos_pred.shape[1]):
             if valid_mask[i, t]:
-                # Distancia euclidiana en cada timestep válido (solo x,y)
+                # Distancia euclidiana en cada timestep vÃ¡lido (solo x,y)
                 drift_xy = np.linalg.norm(pos_pred[i, t, :2] - pos_true[i, t, :2])
                 all_drifts.append(drift_xy)
     
@@ -453,8 +448,8 @@ def train_model(dataset, model_config, fast_mode=False):
     
     Args:
         dataset: GPSTrackDataset
-        model_config: Diccionario con configuración de entrenamiento
-        fast_mode: Si True, reduce datos y épocas para pruebas rápidas
+        model_config: Diccionario con configuraciÃ³n de entrenamiento
+        fast_mode: Si True, reduce datos y Ã©pocas para pruebas rÃ¡pidas
         
     Returns:
         tuple: (model, history, metrics, training_time)
@@ -464,9 +459,9 @@ def train_model(dataset, model_config, fast_mode=False):
     # Cargar datos por sets
     (X_train, y_train, masks_train), (X_val, y_val, masks_val), (X_test, y_test, masks_test) = dataset.load_by_sets()
     
-    # Aplicar limitaciones de modo rápido
+    # Aplicar limitaciones de modo rÃ¡pido
     if fast_mode:
-        print("🚀 MODO RÁPIDO: Limitando datos para pruebas")
+        print("ðŸš€ MODO RÃPIDO: Limitando datos para pruebas")
         max_samples = 100
         
         if len(X_train) > max_samples:
@@ -532,8 +527,8 @@ def train_model(dataset, model_config, fast_mode=False):
     # Entrenamiento
     start_time = time.time()
     
-    print(f"\n🔄 Iniciando entrenamiento:")
-    print(f"  - Épocas: {model_config['epochs']}")
+    print(f"\nðŸ”„ Iniciando entrenamiento:")
+    print(f"  - Ã‰pocas: {model_config['epochs']}")
     print(f"  - Batch size: {model_config['batch_size']}")
     print(f"  - Learning rate: {model_config['learning_rate']}")
     print(f"  - Patience: {model_config['patience']}")
@@ -554,17 +549,18 @@ def train_model(dataset, model_config, fast_mode=False):
     final_val_loss = history.history['val_loss'][-1]
     epochs_trained = len(history.history['loss'])
     
-    print(f"\n✅ Entrenamiento completado:")
-    print(f"  - Épocas entrenadas: {epochs_trained}/{model_config['epochs']}")
+    print(f"\nâœ… Entrenamiento completado:")
+    print(f"  - Ã‰pocas entrenadas: {epochs_trained}/{model_config['epochs']}")
     print(f"  - Tiempo total: {training_time/60:.2f} minutos")
     print(f"  - Loss final train: {final_train_loss:.6f}")
     print(f"  - Loss final val: {final_val_loss:.6f}")
     
     # Graficar historia
-    plot_training_history(history, "training_history.png")
+    Path("results/training").mkdir(parents=True, exist_ok=True)
+    plot_training_history(history, "results/training/training_history.png")
     
-    # Evaluación en test
-    print(f"\n📊 Evaluando en conjunto TEST...")
+    # EvaluaciÃ³n en test
+    print(f"\nðŸ“Š Evaluando en conjunto TEST...")
     test_metrics = evaluate_model(model, X_test, y_test, masks_test, norm_stats=dataset.norm_stats)
     
     # Guardar modelo final
@@ -576,53 +572,59 @@ def train_model(dataset, model_config, fast_mode=False):
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
-        description='Entrenar red neuronal de corrección GPS',
+        description='Entrenar red neuronal de correcciÃ³n GPS',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     
     # Argumentos principales
     parser.add_argument('--data_root', type=str, default='data/input',
-                        help='Directorio raíz de datos')
+                        help='Directorio raÃ­z de datos')
     
-    # Hiperparámetros de entrenamiento
+    # HiperparÃ¡metros de entrenamiento
     parser.add_argument('--epochs', type=int, default=100,
-                        help='Número máximo de épocas')
+                        help='NÃºmero mÃ¡ximo de Ã©pocas')
     parser.add_argument('--batch_size', type=int, default=64,
-                        help='Tamaño de batch')
+                        help='TamaÃ±o de batch')
     parser.add_argument('--lr', type=float, default=1e-3,
                         help='Learning rate inicial')
     parser.add_argument('--patience', type=int, default=15,
                         help='Paciencia para early stopping')
     parser.add_argument('--lambda_traj', type=float, default=1.0,
-                        help='Peso del término de offset final en la loss')
+                        help='Peso del termino de trayectoria acumulada en la loss')
     parser.add_argument('--lambda_bias', type=float, default=0.1,
-                        help='Peso del término cero-media en la loss')
+                        help='Peso del tÃ©rmino cero-media en la loss')
     
     # Opciones adicionales
     parser.add_argument('--fast', action='store_true',
-                        help='Modo rápido: reduce épocas y datos para pruebas')
+                        help='Modo rÃ¡pido: reduce Ã©pocas y datos para pruebas')
+    parser.add_argument('--seed', type=int, default=42,
+                        help='Semilla para comparaciones reproducibles')
     
     return parser.parse_args()
 
 def main():
-    """Función principal de entrenamiento."""
-    print("=== ENTRENAMIENTO DE RED NEURONAL PARA CORRECCIÓN DE TRACKS GPS ===\n")
+    """FunciÃ³n principal de entrenamiento."""
+    print("=== ENTRENAMIENTO DE RED NEURONAL PARA CORRECCIÃ“N DE TRACKS GPS ===\n")
     
     try:
         # Parse argumentos
         args = parse_args()
+        random.seed(args.seed)
+        np.random.seed(args.seed)
+        tf.keras.utils.set_random_seed(args.seed)
         
-        print(f"Configuración:")
+        print(f"ConfiguraciÃ³n:")
         print(f"  - Directorio datos: {args.data_root}")
-        print(f"  - Épocas: {args.epochs}")
+        print(f"  - Ã‰pocas: {args.epochs}")
         print(f"  - Batch size: {args.batch_size}")
         print(f"  - Learning rate: {args.lr}")
         print(f"  - Patience: {args.patience}")
         print(f"  - Lambda traj: {args.lambda_traj}")
         print(f"  - Lambda bias: {args.lambda_bias}")
-        print(f"  - Modo rápido: {args.fast}")
+        print(f"  - Seed: {args.seed}")
+        print(f"  - Modo rÃ¡pido: {args.fast}")
         
-        # Configuración del modelo
+        # ConfiguraciÃ³n del modelo
         model_config = {
             'epochs': args.epochs,
             'batch_size': args.batch_size,
@@ -632,28 +634,30 @@ def main():
             'lambda_bias': args.lambda_bias
         }
         
-        # Aplicar limitaciones de modo rápido
+        # Aplicar limitaciones de modo rÃ¡pido
         if args.fast:
-            print(f"\n🚀 MODO RÁPIDO ACTIVADO")
+            print(f"\nðŸš€ MODO RÃPIDO ACTIVADO")
             model_config['epochs'] = min(model_config['epochs'], 10)
             model_config['batch_size'] = min(model_config['batch_size'], 16)
             model_config['patience'] = min(model_config['patience'], 5)
-            print(f"  - Épocas limitadas a: {model_config['epochs']}")
+            print(f"  - Ã‰pocas limitadas a: {model_config['epochs']}")
             print(f"  - Batch size limitado a: {model_config['batch_size']}")
             print(f"  - Patience limitada a: {model_config['patience']}")
         
         # Cargar dataset y entrenar
-        print(f"\n📂 Cargando dataset...")
+        print(f"\nðŸ“‚ Cargando dataset...")
         dataset = GPSTrackDataset(data_dir=args.data_root)
         
-        print(f"\n🎯 Ejecutando entrenamiento")
+        print(f"\nðŸŽ¯ Ejecutando entrenamiento")
         model, history, test_metrics, training_time = train_model(
             dataset, model_config, fast_mode=args.fast
         )
         
         # Guardar resultados
         mode_suffix = "_fast" if args.fast else "_complete"
-        results_file = f'training_results{mode_suffix}.json'
+        results_dir = Path('results') / 'training'
+        results_dir.mkdir(parents=True, exist_ok=True)
+        results_file = results_dir / f'training_results{mode_suffix}.json'
         
         results = {
             'config': model_config,
@@ -668,7 +672,7 @@ def main():
             json.dump(results, f, indent=2)
         
         print(f"\n=== RESULTADOS FINALES ===")
-        print(f"Modo: {'RÁPIDO' if args.fast else 'COMPLETO'}")
+        print(f"Modo: {'RÃPIDO' if args.fast else 'COMPLETO'}")
         if 'mae_total_meters' in test_metrics:
             print(f"MAE total (metros): {test_metrics['mae_total_meters']:.4f} m")
             if 'drift_final_mean_m' in test_metrics:
@@ -679,10 +683,10 @@ def main():
         print(f"Tiempo total: {training_time/60:.2f} minutos")
         print(f"Resultados guardados en: {results_file}")
         
-        print(f"\n✅ Entrenamiento completado exitosamente")
+        print(f"\nâœ… Entrenamiento completado exitosamente")
         
     except Exception as e:
-        print(f"❌ ERROR: {e}")
+        print(f"âŒ ERROR: {e}")
         import traceback
         traceback.print_exc()
         return 1

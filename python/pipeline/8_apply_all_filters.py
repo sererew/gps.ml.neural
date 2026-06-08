@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Script maestro para aplicar todos los filtros a todas las pasadas.
 
@@ -58,7 +58,7 @@ def find_track_files(preprocessed_dir):
         track_files = []
         for gpx_file in gpx_files:
             filename = os.path.basename(gpx_file)
-            # Excluir archivos de patrón
+            # Excluir archivos de patron
             if not ("pattern" in filename or "aligned_pattern" in filename):
                 track_files.append(gpx_file)
         
@@ -69,24 +69,26 @@ def find_track_files(preprocessed_dir):
 
 def get_available_filters():
     """
-    Obtiene la lista de filtros disponibles basándose en los scripts 7_*.py
-    
+    Obtiene la lista de filtros disponibles basandose en python/filters/7_*.py.
+
     Returns:
         dict: {filter_name: script_path}
     """
     filters = {}
-    
-    # Buscar todos los scripts de filtros
-    filter_scripts = glob.glob("7_*_filter.py")
-    
+    script_dir = Path(__file__).resolve().parent
+    filters_dir = script_dir.parent / "filters"
+
+    # Buscar todos los scripts de filtros en la carpeta organizada.
+    filter_scripts = sorted(filters_dir.glob("7_*_filter.py"))
+
     for script in filter_scripts:
-        # Extraer nombre del filtro del nombre del script
+        # Extraer nombre del filtro del nombre del script.
         # Ejemplo: "7_nn_filter.py" -> "nn"
-        script_name = os.path.basename(script)
+        script_name = script.name
         if script_name.startswith("7_") and script_name.endswith("_filter.py"):
             filter_name = script_name[2:-10]  # Quitar "7_" al inicio y "_filter.py" al final
-            filters[filter_name] = script
-    
+            filters[filter_name] = str(script)
+
     return filters
 
 def create_output_path(filter_name, pasada, input_file):
@@ -95,7 +97,7 @@ def create_output_path(filter_name, pasada, input_file):
     
     Args:
         filter_name: Nombre del filtro (ej: "nn", "kalman")
-        pasada: Número de pasada
+        pasada: Numero de pasada
         input_file: Archivo de entrada
         
     Returns:
@@ -115,7 +117,7 @@ def create_output_path(filter_name, pasada, input_file):
 
 def run_filter(filter_script, input_file, output_file):
     """
-    Ejecuta un filtro específico en un archivo.
+    Ejecuta un filtro especifico en un archivo.
     
     Args:
         filter_script: Script del filtro a ejecutar
@@ -139,7 +141,7 @@ def run_filter(filter_script, input_file, output_file):
             cmd,
             capture_output=True,
             text=True,
-            timeout=300  # 5 minutos máximo por filtro
+            timeout=300  # 5 minutos maximo por filtro
         )
         elapsed = time.time() - start_time
         
@@ -167,7 +169,7 @@ def apply_filters_to_tracks(tracks_by_pasada, available_filters, selected_filter
         selected_filters: Lista de filtros a aplicar (None = todos)
         selected_pasadas: Lista de pasadas a procesar (None = todas)
         overwrite: Si sobrescribir archivos existentes
-        max_workers: Número máximo de procesos paralelos
+        max_workers: Numero maximo de procesos paralelos
     """
     # Filtrar pasadas si se especifican
     if selected_pasadas is not None:
@@ -194,14 +196,14 @@ def apply_filters_to_tracks(tracks_by_pasada, available_filters, selected_filter
                 total_tracks += 1
     
     if not tasks:
-        print("No hay tareas que procesar (todos los archivos ya existen y no se especificó --overwrite)")
+        print("No hay tareas que procesar (todos los archivos ya existen y no se especifico --overwrite)")
         return
     
     print(f"\n[INICIO] Iniciando procesamiento de {total_tracks} combinaciones filtro-track")
     print(f"   Pasadas: {list(tracks_by_pasada.keys())}")
     print(f"   Filtros: {list(available_filters.keys())}")
     print(f"   Procesos paralelos: {max_workers}")
-    print(f"   Sobrescribir: {'Sí' if overwrite else 'No'}")
+    print(f"   Sobrescribir: {'Si' if overwrite else 'No'}")
     print()
     
     # Ejecutar tareas en paralelo
@@ -213,7 +215,7 @@ def apply_filters_to_tracks(tracks_by_pasada, available_filters, selected_filter
         # Enviar todas las tareas
         futures = [executor.submit(filter_task, task) for task in tasks]
         
-        # Procesar resultados conforme van completándose
+        # Procesar resultados conforme van completandose
         for i, future in enumerate(futures):
             try:
                 success, filter_name, input_file, output_file, message = future.result()
@@ -232,7 +234,7 @@ def apply_filters_to_tracks(tracks_by_pasada, available_filters, selected_filter
                 
             except Exception as e:
                 failed += 1
-                print(f"[ERROR] [Error] Tarea falló: {str(e)}")
+                print(f"[ERROR] [Error] Tarea fallo: {str(e)}")
     
     elapsed = time.time() - start_time
     
@@ -246,7 +248,7 @@ def apply_filters_to_tracks(tracks_by_pasada, available_filters, selected_filter
         print(f"\n[WARNING] {failed} tareas fallaron. Revisar los mensajes de error arriba.")
 
 def main():
-    """Función principal."""
+    """Funcion principal."""
     parser = argparse.ArgumentParser(description='Apply all filters to all track passes')
     parser.add_argument('--pasadas', type=str, help='Comma-separated list of passes to process (e.g., "1,2,3")')
     parser.add_argument('--filtros', type=str, help='Comma-separated list of filters to apply (e.g., "nn,kalman")')
@@ -257,29 +259,29 @@ def main():
     args = parser.parse_args()
     
     try:
-        print("🔍 Buscando tracks preprocessados...")
+        print("[INFO] Buscando tracks preprocessados...")
         
         # Buscar todos los tracks
         preprocessed_dir = os.path.join("data", "preprocessed")
         if not os.path.exists(preprocessed_dir):
-            print(f"❌ Error: Directorio {preprocessed_dir} no existe")
+            print(f"[ERROR] Error: Directorio {preprocessed_dir} no existe")
             sys.exit(1)
         
         tracks_by_pasada = find_track_files(preprocessed_dir)
         
         if not tracks_by_pasada:
-            print("❌ No se encontraron tracks preprocessados")
+            print("[ERROR] No se encontraron tracks preprocessados")
             sys.exit(1)
         
         total_tracks = sum(len(files) for files in tracks_by_pasada.values())
         print(f"   Encontradas {len(tracks_by_pasada)} pasadas con {total_tracks} tracks totales")
         
         # Obtener filtros disponibles
-        print("\n🔍 Buscando filtros disponibles...")
+        print("\n[INFO] Buscando filtros disponibles...")
         available_filters = get_available_filters()
         
         if not available_filters:
-            print("❌ No se encontraron scripts de filtros (7_*_filter.py)")
+            print("[ERROR] No se encontraron scripts de filtros en python/filters (7_*_filter.py)")
             sys.exit(1)
         
         print(f"   Filtros disponibles: {list(available_filters.keys())}")
@@ -290,7 +292,7 @@ def main():
             selected_pasadas = [p.strip() for p in args.pasadas.split(',')]
             invalid_pasadas = [p for p in selected_pasadas if p not in tracks_by_pasada]
             if invalid_pasadas:
-                print(f"❌ Pasadas inválidas: {invalid_pasadas}")
+                print(f"[ERROR] Pasadas invalidas: {invalid_pasadas}")
                 print(f"   Pasadas disponibles: {list(tracks_by_pasada.keys())}")
                 sys.exit(1)
         
@@ -299,7 +301,7 @@ def main():
             selected_filters = [f.strip() for f in args.filtros.split(',')]
             invalid_filters = [f for f in selected_filters if f not in available_filters]
             if invalid_filters:
-                print(f"❌ Filtros inválidos: {invalid_filters}")
+                print(f"[ERROR] Filtros invalidos: {invalid_filters}")
                 print(f"   Filtros disponibles: {list(available_filters.keys())}")
                 sys.exit(1)
         
@@ -312,13 +314,13 @@ def main():
             if pasada in tracks_by_pasada:
                 total_combinations += len(tracks_by_pasada[pasada]) * len(filters_to_process)
         
-        print(f"\n📋 Plan de procesamiento:")
+        print(f"\n[PLAN] Plan de procesamiento:")
         print(f"   Pasadas a procesar: {pasadas_to_process}")
         print(f"   Filtros a aplicar: {filters_to_process}")
         print(f"   Combinaciones totales: {total_combinations}")
         
         if args.dry_run:
-            print(f"\n🔍 DRY RUN - Mostrando qué se procesaría:")
+            print(f"\n[INFO] DRY RUN - Mostrando que se procesaria:")
             for pasada in pasadas_to_process:
                 if pasada not in tracks_by_pasada:
                     continue
@@ -328,16 +330,16 @@ def main():
                     print(f"    {track_name}")
                     for filter_name in filters_to_process:
                         output_path = create_output_path(filter_name, pasada, track_file)
-                        exists = "✅" if os.path.exists(output_path) else "⚪"
+                        exists = "OK" if os.path.exists(output_path) else "--"
                         print(f"      -> {filter_name:15} {exists} {output_path}")
             print(f"\nDRY RUN completado. Use sin --dry-run para procesar realmente.")
             return
         
         # Confirmar antes de procesar
         if total_combinations > 50:
-            response = input(f"\n⚠️  Se van a procesar {total_combinations} combinaciones. ¿Continuar? (y/N): ")
+            response = input(f"\n[WARN] Se van a procesar {total_combinations} combinaciones. Continuar? (y/N): ")
             if response.lower() != 'y':
-                print("Operación cancelada por el usuario.")
+                print("Operacion cancelada por el usuario.")
                 return
         
         # Aplicar filtros
@@ -350,17 +352,20 @@ def main():
             max_workers=args.max_workers
         )
         
-        print(f"\n🎉 Procesamiento completado!")
-        print(f"   Los tracks filtrados están en: data/filtered/<filtro>/<pasada>/")
+        print(f"\n[DONE] Procesamiento completado!")
+        print(f"   Los tracks filtrados estan en: data/filtered/<filtro>/<pasada>/")
         
     except KeyboardInterrupt:
-        print(f"\n\n⚠️  Procesamiento interrumpido por el usuario.")
+        print(f"\n\n[WARN] Procesamiento interrumpido por el usuario.")
         sys.exit(1)
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"[ERROR] Error: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
 
 if __name__ == "__main__":
     main()
+
+
+
