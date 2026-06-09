@@ -8,8 +8,8 @@ Analiza ventanas deslizantes de 10 metros y detecta pendientes superiores al 35%
 tanto en subida como en bajada.
 
 Genera:
-  - data/reports/slopes/pattern_slopes.csv  (tramos anómalos)
-  - data/reports/slopes/gpx/<pattern>_slope_anomalies.gpx  (waypoints anómalos)
+  - results/reports/slopes/pattern_slopes.csv  (tramos anómalos)
+  - results/reports/slopes/gpx/<pattern>_slope_anomalies.gpx  (waypoints anómalos)
 """
 import os
 import glob
@@ -23,7 +23,7 @@ from tqdm import tqdm
 # Configuración
 # ====================================================
 RAW_DIR = os.path.join("data", "raw")
-REPORT_DIR = os.path.join("data", "reports", "slopes")
+REPORT_DIR = os.path.join("results", "reports", "slopes")
 GPX_DIR = os.path.join(REPORT_DIR, "gpx")
 REPORT_PATH = os.path.join(REPORT_DIR, "pattern_slopes.csv")
 

@@ -6,7 +6,7 @@ Analiza las grabaciones en cada pasada (data/raw/<pasada>/)
 y detecta incoherencias en las fechas/horas de inicio y fin.
 
 Genera:
-  - data/reports/time_ranges.csv
+  - results/reports/time_ranges.csv
 """
 
 import os
@@ -21,7 +21,7 @@ from tqdm import tqdm
 # Configuración
 # ====================================================
 RAW_DIR = os.path.join("data", "raw")
-REPORT_DIR = os.path.join("data", "reports")
+REPORT_DIR = os.path.join("results", "reports")
 REPORT_PATH = os.path.join(REPORT_DIR, "time_ranges.csv")
 
 # Si las horas difieren más de este margen del resto (segundos) → marcar como error

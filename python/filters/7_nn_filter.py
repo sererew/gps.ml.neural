@@ -14,7 +14,7 @@ El proceso es:
 
 Uso:
     python 7_nn_filter.py input_track.gpx [output_track.gpx]
-    python 7_nn_filter.py input_track.gpx [output_track.gpx] --model custom_model.h5
+    python 7_nn_filter.py input_track.gpx [output_track.gpx] --model custom_model.keras
 """
 
 import numpy as np
@@ -252,7 +252,7 @@ def create_gpx_with_gpxpy(lat, lon, ele, time=None, output_path="filtered_track.
     print(f"Filtered track saved to {output_path}")
 
 def masked_mae_loss(y_true, y_pred):
-    """Custom loss function para cargar el modelo."""
+    """Custom loss function for loading legacy models."""
     mask = tf.reduce_sum(tf.abs(y_true), axis=-1, keepdims=True) > 1e-7
     mask = tf.cast(mask, tf.float32)
     
@@ -264,12 +264,22 @@ def masked_mae_loss(y_true, y_pred):
     
     return sum_mae / (sum_mask + 1e-7)
 
+def residual_mae_loss(y_true, y_pred):
+    """Per-timestep MAE for residual correction models."""
+    return tf.reduce_mean(tf.abs(y_pred - y_true), axis=-1)
+
 def load_model_robust(model_path):
-    """Carga el modelo de forma robusta."""
+    """Load the model robustly."""
     print("Loading neural network model...")
     
     try:
-        model = load_model(model_path, custom_objects={'masked_mae_loss': masked_mae_loss})
+        model = load_model(
+            model_path,
+            custom_objects={
+                'masked_mae_loss': masked_mae_loss,
+                'residual_mae_loss': residual_mae_loss
+            }
+        )
         print("Model loaded successfully with custom objects.")
         return model
     except Exception as e:
@@ -282,7 +292,12 @@ def load_model_robust(model_path):
     except Exception as e:
         raise RuntimeError(f"Failed to load model from {model_path}: {e}")
 
-def apply_neural_network_filter(track_df, model_path="models/model_final.keras", norm_stats_path="data/input/norm_stats_train.json"):
+def apply_neural_network_filter(
+    track_df,
+    model_path="models/model_final_v3.keras",
+    norm_stats_path="data/input/norm_stats_train.json",
+    model_output="residual"
+):
     """
     Aplica el filtro de red neuronal a un track con correcciones geodésicas.
     """
@@ -318,7 +333,7 @@ def apply_neural_network_filter(track_df, model_path="models/model_final.keras",
     sequence_length = len(dx_norm)
     max_sequence = 3600
     
-    # Procesar en chunks (funciona tanto para tracks largos como cortos)
+    # Process in chunks so both long and short tracks work.
     print(f"Processing {sequence_length} points in chunks of {max_sequence}")
     
     filtered_dx, filtered_dy, filtered_dz = [], [], []
@@ -327,21 +342,27 @@ def apply_neural_network_filter(track_df, model_path="models/model_final.keras",
         end_idx = min(i + max_sequence, sequence_length)
         chunk_len = end_idx - i
         
-        # Crear tensor con padding hasta max_sequence
+        # Create a padded tensor up to max_sequence.
         input_data = np.zeros((1, max_sequence, 3))
         input_data[0, :chunk_len, 0] = dx_norm[i:end_idx]
         input_data[0, :chunk_len, 1] = dy_norm[i:end_idx]
         input_data[0, :chunk_len, 2] = dz_norm[i:end_idx]
         
         # Aplicar modelo y extraer solo la porción válida
-        filtered_chunk = model.predict(input_data, verbose=0)
+        model_chunk = model.predict(input_data, verbose=0)
+        if model_output == "residual":
+            filtered_chunk = input_data + model_chunk
+        elif model_output == "direct":
+            filtered_chunk = model_chunk
+        else:
+            raise ValueError(f"Unsupported model output mode: {model_output}")
         #filtered_chunk = input_data.copy() # puenteado para pruebas
         
         filtered_dx.extend(filtered_chunk[0, :chunk_len, 0])
         filtered_dy.extend(filtered_chunk[0, :chunk_len, 1])
         filtered_dz.extend(filtered_chunk[0, :chunk_len, 2])
     
-    # Convertir a arrays numpy
+    # Convert to numpy arrays.
     filtered_dx = np.array(filtered_dx)
     filtered_dy = np.array(filtered_dy)
     filtered_dz = np.array(filtered_dz)
@@ -360,7 +381,7 @@ def apply_neural_network_filter(track_df, model_path="models/model_final.keras",
     print(f"  Original: ({track_df['lat'].iloc[0]:.8f}, {track_df['lon'].iloc[0]:.8f})")
     print(f"  Filtered: ({lat_filt[0]:.8f}, {lon_filt[0]:.8f})")
     
-    # Crear DataFrame con track filtrado
+    # Create the filtered track DataFrame.
     filtered_df = track_df.copy()
     filtered_df['lat'] = lat_filt
     filtered_df['lon'] = lon_filt
@@ -373,8 +394,9 @@ def main():
     parser = argparse.ArgumentParser(description='Filter GPS track using neural network')
     parser.add_argument('input_gpx', help='Input GPX file')
     parser.add_argument('output_gpx', nargs='?', help='Output filtered GPX file')
-    parser.add_argument('--model', default='models/model_final.keras', help='Path to trained model')
+    parser.add_argument('--model', default='models/model_final_v3.keras', help='Path to trained model')
     parser.add_argument('--norm-stats', default='data/input/norm_stats_train.json', help='Path to normalization statistics')
+    parser.add_argument('--model-output', choices=['residual', 'direct'], default='residual', help='Model output interpretation')
     parser.add_argument('--suffix', default='nn_filtered', help='Suffix for auto-generated output filename')
     
     args = parser.parse_args()
@@ -407,7 +429,8 @@ def main():
         filtered_df = apply_neural_network_filter(
             track_df,
             model_path=args.model,
-            norm_stats_path=args.norm_stats
+            norm_stats_path=args.norm_stats,
+            model_output=args.model_output
         )
         
         create_gpx_with_gpxpy(

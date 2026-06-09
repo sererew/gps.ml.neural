@@ -102,7 +102,7 @@ Desarrollar un sistema de **filtrado de tracks GPS** que, **dado cualquier track
 
 **Características avanzadas**:
 - **Gestión inteligente**: No sobrescribe archivos existentes (configurable)
-- **Estructura organizada**: `data/filtered/<filtro>/<pasada>/`
+- **Estructura organizada**: `results/filtered/<filtro>/<pasada>/`
 - **Progress tracking**: Progreso en tiempo real con estadísticas
 - **Manejo robusto** de errores y timeouts (5 min por filtro)
 - **Escalabilidad**: Procesa automáticamente 25 pasadas × 9 filtros = 2295 combinaciones
@@ -110,13 +110,13 @@ Desarrollar un sistema de **filtrado de tracks GPS** que, **dado cualquier track
 **Uso**:
 ```bash
 # Procesar todo
-python 8_apply_all_filters.py
+python 7_apply_all_filters.py
 
 # Solo ciertas pasadas/filtros
-python 8_apply_all_filters.py --pasadas 1,2,3 --filtros nn,kalman,savgol
+python 7_apply_all_filters.py --pasadas 1,2,3 --filtros nn,kalman,savgol
 
 # Con sobrescritura
-python 8_apply_all_filters.py --overwrite
+python 7_apply_all_filters.py --overwrite
 ```
 
 ## 8️⃣ Análisis Comparativo (script 9_compare_tracks.py)

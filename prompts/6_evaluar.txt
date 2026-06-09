@@ -23,12 +23,12 @@ Ahora necesitamos comparar la salida con la de otros filtros. Pero vayamos paso 
 	
 	- 3) Script que aplique todos los filtros a todas las pasadas
 		- Los tracks a procesar estarán en data/preprocessed/<pasada> (samplizados a 1 hz)
-		- Los resultados estarán en data/filtered/<pasada>/<filter_name> mismo nombre
+		- Los resultados estarán en results/filtered/<pasada>/<filter_name> mismo nombre
 		- La red neuronal es otro filtro más "nn" puede ser su nombre
 			
 	- 4) Comparar los tracks filtrados:
 		- Los tracks patrón están samplizados a 1 hz y disponibles en data/preprocessed/<pasada> con el nombre <pasada>_aligned_pattern_resampled.gpx
-		- Para cada track en data/filtered se generará una fila en Excel con el siguiente contenido:
+		- Para cada track en results/filtered se generará una fila en Excel con el siguiente contenido:
 			- track_name
 			- total_points
 			- total_pattern_length

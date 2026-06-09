@@ -10,7 +10,7 @@ sin generar nuevas rampas excesivas.
 Entradas: data/raw/<pasada>/*_pattern.gpx
 Salidas:
   - data/preprocessed/<pasada>/<pattern>_elev_fixed.gpx
-  - data/reports/elev_fixes/pattern_elev_fixes.csv
+  - results/reports/elev_fixes/pattern_elev_fixes.csv
 """
 
 import os, glob, math, csv
@@ -24,7 +24,7 @@ import gpxpy, gpxpy.gpx
 # ==========================
 RAW_DIR  = os.path.join("data", "raw")
 OUT_BASE = os.path.join("data", "preprocessed")
-REPORT_DIR = os.path.join("data", "reports", "elev_fixes")
+REPORT_DIR = os.path.join("results", "reports", "elev_fixes")
 REPORT_CSV = os.path.join(REPORT_DIR, "pattern_elev_fixes.csv")
 
 SLOPE_THRESHOLD   = 0.20   # pendiente anómala (>20%)

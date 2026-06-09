@@ -5,9 +5,9 @@
 Analiza tracks patrón *_pattern_aligned_resampled.gpx y detecta zonas anómalas.
 
 Salida:
-  - data/reports/pattern_delta_anomalies.csv  (incluye causas y métricas interpretables)
-  - data/reports/plots/<pattern>.png          (dx,dy,dz, |v| con tramos en rojo)
-  - data/reports/gpx/<pattern>_anomalies.gpx  (segmentos + waypoints con causas/metrics)
+  - results/reports/pattern_delta_anomalies.csv  (incluye causas y métricas interpretables)
+  - results/reports/plots/<pattern>.png          (dx,dy,dz, |v| con tramos en rojo)
+  - results/reports/gpx/<pattern>_anomalies.gpx  (segmentos + waypoints con causas/metrics)
 """
 
 import os
@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 # Configuración
 # ====================================================
 PRE_DIR = os.path.join("data", "preprocessed")
-REPORT_DIR = os.path.join("data", "reports")
+REPORT_DIR = os.path.join("results", "reports")
 PLOTS_DIR  = os.path.join(REPORT_DIR, "plots")
 GPX_DIR    = os.path.join(REPORT_DIR, "gpx")
 REPORT_PATH = os.path.join(REPORT_DIR, "pattern_delta_anomalies.csv")
