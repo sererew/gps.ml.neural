@@ -1,9 +1,9 @@
 ﻿#!/usr/bin/env python3
 """
-Train a residual neural network for GPS track correction.
+Train a residual neural network for GPS track correction with augmented features.
 
-The network receives sequences of noisy deltas (dx, dy, dz) and learns to
-predict the residual correction against the clean pattern track:
+The network receives sequences of noisy deltas plus context features and
+learns to predict the residual correction against the clean pattern track:
 
     residual = clean_delta - noisy_delta
     filtered_delta = noisy_delta + predicted_residual
@@ -13,7 +13,7 @@ Architecture:
 - Dense(64) with ReLU activation
 - Output(3) with linear activation for corrections (dx, dy, dz)
 
-Input: [batch, time, features], where features = [dx, dy, dz]
+Input: [batch, time, features], where features = [dx, dy, dz, t_norm, distance_norm, absolute_t_norm]
 Output: [batch, time, features], where features = [correction_dx, correction_dy, correction_dz]
 
 Uses a pre-split dataset (train/val/test) to avoid data leakage.
@@ -87,6 +87,21 @@ class GPSTrackDataset:
             if col in manifest_df.columns:
                 manifest_df[col] = manifest_df[col].fillna('').astype(str).apply(lambda p: p.replace('\\', '/'))
 
+    def _add_recording_ranges(self, *manifests):
+        """Add recording-level time ranges used by absolute_t_norm."""
+        combined = pd.concat(
+            [df[['grabacion', 't_start', 't_end']] for df in manifests],
+            ignore_index=True
+        )
+        ranges = combined.groupby('grabacion').agg(
+            recording_start=('t_start', 'min'),
+            recording_end=('t_end', 'max')
+        )
+
+        for manifest in manifests:
+            manifest['recording_start'] = manifest['grabacion'].map(ranges['recording_start'])
+            manifest['recording_end'] = manifest['grabacion'].map(ranges['recording_end'])
+
     def load_by_sets(self):
         """
         Load the dataset using pre-split manifests.
@@ -103,6 +118,7 @@ class GPSTrackDataset:
         self._normalize_manifest_paths(train_manifest)
         self._normalize_manifest_paths(val_manifest)
         self._normalize_manifest_paths(test_manifest)
+        self._add_recording_ranges(train_manifest, val_manifest, test_manifest)
         
         print(f"Loading data by split:")
         print(f"  Train: {len(train_manifest)} windows")
@@ -145,12 +161,50 @@ class GPSTrackDataset:
         mask_path = _to_path(row['mask_path'])
         mask_data = pd.read_csv(mask_path)
         
-        # Extract features (dx, dy, dz).
+        # Extract features (dx, dy, dz) and add context features.
         input_features = input_data[['dx', 'dy', 'dz']].values
         label_features = label_data[['dx', 'dy', 'dz']].values
         mask_values = mask_data['mask'].values
+        input_features = self._augment_input_features(input_features, mask_values, row)
         
         return input_features, label_features, mask_values
+
+    def _augment_input_features(self, input_features, mask_values, row):
+        """Append t_norm, distance_norm, and absolute_t_norm to input features."""
+        valid_mask = mask_values.astype(bool)
+        n_steps = input_features.shape[0]
+        n_valid = int(np.sum(valid_mask))
+        context = np.zeros((n_steps, 3), dtype=input_features.dtype)
+
+        if n_valid == 0:
+            return np.concatenate([input_features, context], axis=1)
+
+        valid_indices = np.where(valid_mask)[0]
+        t_norm = np.zeros(n_valid, dtype=input_features.dtype)
+        if n_valid > 1:
+            t_norm = np.arange(n_valid, dtype=input_features.dtype) / float(n_valid - 1)
+
+        dx_m = input_features[valid_indices, 0] * self.norm_stats['std']['dx'] + self.norm_stats['mean']['dx']
+        dy_m = input_features[valid_indices, 1] * self.norm_stats['std']['dy'] + self.norm_stats['mean']['dy']
+        step_lengths = np.sqrt(dx_m**2 + dy_m**2)
+        cumulative_distance = np.cumsum(step_lengths)
+        total_distance = cumulative_distance[-1]
+        if total_distance > 0:
+            distance_norm = cumulative_distance / total_distance
+        else:
+            distance_norm = np.zeros(n_valid, dtype=input_features.dtype)
+
+        recording_start = float(row.get('recording_start', row.get('t_start', 0.0)))
+        recording_end = float(row.get('recording_end', row.get('t_end', recording_start)))
+        recording_duration = max(recording_end - recording_start, 1.0)
+        timestamps = float(row['t_start']) + np.arange(n_valid, dtype=input_features.dtype)
+        absolute_t_norm = np.clip((timestamps - recording_start) / recording_duration, 0.0, 1.0)
+
+        context[valid_indices, 0] = t_norm
+        context[valid_indices, 1] = distance_norm
+        context[valid_indices, 2] = absolute_t_norm
+
+        return np.concatenate([input_features, context], axis=1)
     
     def _load_data_batch(self, manifest_subset):
         """Load one batch of data from a manifest."""
@@ -183,11 +237,11 @@ def residual_mae_loss(y_true, y_pred):
     """
     return tf.reduce_mean(tf.abs(y_pred - y_true), axis=-1)
 
-def create_model(sequence_length=3600, n_features=3):
+def create_model(sequence_length=3600, n_input_features=6, n_output_features=3):
     """Create the neural network model."""
     model = Sequential([
         # Masking layer to ignore padding.
-        Masking(mask_value=0.0, input_shape=(sequence_length, n_features)),
+        Masking(mask_value=0.0, input_shape=(sequence_length, n_input_features)),
         
         # LSTM with 128 units, returning full sequences.
         LSTM(128, return_sequences=True, dropout=0.1, recurrent_dropout=0.0),
@@ -196,8 +250,8 @@ def create_model(sequence_length=3600, n_features=3):
         Dense(64, activation='relu'),
         Dropout(0.2),
         
-        # Output layer with 3 units (dx, dy, dz) and linear activation.
-        Dense(n_features, activation='linear')
+        # Output layer with residual correction units (dx, dy, dz).
+        Dense(n_output_features, activation='linear')
     ])
     
     return model
@@ -239,7 +293,8 @@ def evaluate_model(model, X_test, y_test, masks_test, norm_stats=None):
     # The network predicts residual corrections. Metrics are computed over:
     # filtered_delta = noisy_delta + predicted_correction.
     residual_pred = model.predict(X_test, batch_size=32, verbose=1)
-    y_pred = X_test + residual_pred
+    noisy_deltas = X_test[..., :3]
+    y_pred = noisy_deltas + residual_pred
     
     # Apply masks to compute metrics only on valid positions.
     valid_positions = masks_test.astype(bool)
@@ -327,7 +382,7 @@ def evaluate_model(model, X_test, y_test, masks_test, norm_stats=None):
         
         print(f"Mean final drift: {drift_metrics['drift_final_mean_m']:.4f} m")
         print(f"RMS drift: {drift_metrics['drift_rms_m']:.4f} m") 
-        print(f"Mean final Z error: {drift_metrics['z_final_abs_mean_m']:.4f} m")
+        print(f"Mean abs final Z error: {drift_metrics['z_final_abs_mean_m']:.4f} m")
         print(f"RMS Z drift: {drift_metrics['z_rms_m']:.4f} m")
         print(f"Trajectory length difference: {drift_metrics['length_diff_m']:.4f} m")
         print(f"Mean pattern length: {drift_metrics['true_length_mean_m']:.4f} m")
@@ -500,14 +555,18 @@ def train_model(dataset, model_config, fast_mode=False):
         
         print(f"Limited data - Train: {X_train.shape[0]}, Val: {X_val.shape[0]}, Test: {X_test.shape[0]}")
 
-    # In v3 the network learns residual corrections:
+    # In v4 the network learns residual corrections from augmented inputs:
     # residual = clean_delta - noisy_delta.
-    y_train_residual = y_train - X_train
-    y_val_residual = y_val - X_val
+    y_train_residual = y_train - X_train[..., :3]
+    y_val_residual = y_val - X_val[..., :3]
     y_test_clean = y_test
     
     # Create model.
-    model = create_model(sequence_length=X_train.shape[1], n_features=X_train.shape[2])
+    model = create_model(
+        sequence_length=X_train.shape[1],
+        n_input_features=X_train.shape[2],
+        n_output_features=y_train_residual.shape[2]
+    )
     model.compile(
         optimizer=Adam(learning_rate=model_config['learning_rate']),
         loss=residual_mae_loss,
@@ -516,7 +575,8 @@ def train_model(dataset, model_config, fast_mode=False):
     
     print(f"Model created:")
     print(f"  - Sequence: {X_train.shape[1]} timesteps")
-    print(f"  - Features: {X_train.shape[2]}")
+    print(f"  - Input features: {X_train.shape[2]} (dx, dy, dz, t_norm, distance_norm, absolute_t_norm)")
+    print(f"  - Output features: {y_train_residual.shape[2]} (residual dx, dy, dz)")
     print(f"  - Mode: residual (output = clean_delta - noisy_delta)")
     
     # Create the models directory if needed.
@@ -531,7 +591,7 @@ def train_model(dataset, model_config, fast_mode=False):
             verbose=1
         ),
         ModelCheckpoint(
-            'models/model_best_v3.keras',
+            'models/model_best_v4.keras',
             monitor='val_loss',
             save_best_only=True,
             verbose=1
@@ -579,22 +639,22 @@ def train_model(dataset, model_config, fast_mode=False):
     
     # Plot history.
     Path("results/training").mkdir(parents=True, exist_ok=True)
-    plot_training_history(history, "results/training/training_history_v3.png")
+    plot_training_history(history, "results/training/training_history_v4.png")
     
     # Test evaluation.
     print(f"\nEvaluating on TEST split...")
     test_metrics = evaluate_model(model, X_test, y_test_clean, masks_test, norm_stats=dataset.norm_stats)
     
     # Save final model.
-    model.save('models/model_final_v3.keras')
-    print(f"Final model saved to: models/model_final_v3.keras")
+    model.save('models/model_final_v4.keras')
+    print(f"Final model saved to: models/model_final_v4.keras")
     
     return model, history, test_metrics, training_time
 
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
-        description='Train a GPS correction neural network',
+        description='Train a GPS correction neural network with augmented context features',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     
@@ -621,7 +681,7 @@ def parse_args():
 
 def main():
     """Main training entry point."""
-    print("=== GPS TRACK CORRECTION NEURAL NETWORK TRAINING ===\n")
+    print("=== GPS TRACK CORRECTION NEURAL NETWORK TRAINING V4 ===\n")
     
     try:
         # Parse arguments.
@@ -670,11 +730,13 @@ def main():
         mode_suffix = "_fast" if args.fast else "_complete"
         results_dir = Path('results') / 'training'
         results_dir.mkdir(parents=True, exist_ok=True)
-        results_file = results_dir / f'training_results_v3{mode_suffix}.json'
+        results_file = results_dir / f'training_results_v4{mode_suffix}.json'
         
         results = {
             'config': model_config,
-            'model_type': 'residual',
+            'model_type': 'residual_augmented_features',
+            'input_features': ['dx', 'dy', 'dz', 't_norm', 'distance_norm', 'absolute_t_norm'],
+            'output_features': ['residual_dx', 'residual_dy', 'residual_dz'],
             'test_metrics': test_metrics,
             'training_time_minutes': training_time / 60,
             'epochs_trained': len(history.history['loss']),

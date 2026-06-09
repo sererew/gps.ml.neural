@@ -93,7 +93,7 @@ Desarrollar un sistema de **filtrado de tracks GPS** que, **dado cualquier track
 - **Parámetros configurables** específicos por filtro
 - **Compatibilidad Windows**: Sin caracteres Unicode problemáticos
 
-## 7️⃣ Procesamiento Masivo (script 8_apply_all_filters.py)
+## 7️⃣ Procesamiento Masivo (script 7_apply_all_filters.py)
 **Funcionalidad**:
 - **Detección automática** de todos los tracks en `data/preprocessed/<pasada>/`
 - **Detección automática** de todos los filtros disponibles (scripts `7_*_filter.py`)
@@ -119,7 +119,7 @@ python 7_apply_all_filters.py --pasadas 1,2,3 --filtros nn,kalman,savgol
 python 7_apply_all_filters.py --overwrite
 ```
 
-## 8️⃣ Análisis Comparativo (script 9_compare_tracks.py)
+## 8️⃣ Análisis Comparativo (script 8_compare_tracks.py)
 **Funcionalidad principal**:
 - **Comparación automática** de todos los tracks filtrados vs sus patrones de referencia
 - **Recorte temporal**: Solo compara puntos dentro del rango temporal del patrón
@@ -156,8 +156,8 @@ python 7_apply_all_filters.py --overwrite
 1. **Scripts 1-5**: Preprocesamiento y generación de dataset
 2. **Script 6**: Entrenamiento LOFO y modelo final
 3. **Scripts 7**: Implementación de 9 filtros (neuronal + clásicos)
-4. **Script 8**: Aplicación masiva de filtros (2295 combinaciones)
-5. **Script 9**: Análisis comparativo y reporte Excel
+4. **Script 7**: Aplicación masiva de filtros (2295 combinaciones)
+5. **Script 8**: Análisis comparativo y reporte Excel
 
 **Para un track nuevo**:
 1. **Preprocesar**: Resamplear a 1Hz → calcular deltas → normalizar
@@ -165,12 +165,12 @@ python 7_apply_all_filters.py --overwrite
 3. **Calcular métricas**: Del track filtrado (distancia, desniveles, etc.)
 
 ## 🔟 Implementación y Archivos
-**Scripts Python** (directorio raíz):
-- **Preprocesamiento**: `1_resample_recordings.py` → `5_generate_input_dataset.py`
-- **Entrenamiento**: `6_train_neural_network.py`
+**Scripts Python**:
+- **Preprocesamiento**: `python/pipeline/1_resample_recordings.py` to `python/pipeline/5_generate_input_dataset_v2.py`
+- **Entrenamiento**: `python/pipeline/6_train_neural_network_v3.py`
 - **Filtros individuales**: `7_identity_filter.py` → `7_nn_filter.py` (9 filtros)
-- **Procesamiento masivo**: `8_apply_all_filters.py`
-- **Análisis comparativo**: `9_compare_tracks.py`
+- **Procesamiento masivo**: `python/pipeline/7_apply_all_filters.py`
+- **Análisis comparativo**: `python/pipeline/8_compare_tracks.py`
 
 **Estructura de datos**:
 ```
@@ -228,3 +228,28 @@ Con este sistema completo:
 - **Evaluación objetiva** de filtro neuronal vs métodos clásicos
 - **Métricas precisas** para cálculo de distancia y desniveles
 - **Sistema escalable** para nuevas pasadas y filtros adicionales
+
+## Future line: slow-drift data augmentation
+The current dataset is probably too small for a high-capacity full-track slow-drift
+model. A promising later line is controlled synthetic augmentation of the slow
+component, not a free GAN as a first step.
+
+Candidate synthetic errors:
+- Smooth XY drift with a few spline control points.
+- Initial GPS offset that decays slowly after device start.
+- Very low frequency XY ramps or curves.
+- Independent Z drift, including slow barometric-like bias.
+- Local fast noise kept separate from the slow component.
+
+The useful training pair would be:
+
+```text
+clean/reference track
++ synthetic local noise
++ synthetic slow drift
+= noisy synthetic track
+```
+
+Because the injected slow drift is known, the slow correction target is exact.
+This should be validated only against real held-out tracks, keeping the current
+real test split uncontaminated.
