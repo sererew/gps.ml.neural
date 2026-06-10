@@ -335,13 +335,6 @@ def main():
             print(f"\nDRY RUN completado. Use sin --dry-run para procesar realmente.")
             return
         
-        # Confirmar antes de procesar
-        if total_combinations > 50:
-            response = input(f"\n[WARN] Se van a procesar {total_combinations} combinaciones. Continuar? (y/N): ")
-            if response.lower() != 'y':
-                print("Operacion cancelada por el usuario.")
-                return
-        
         # Aplicar filtros
         apply_filters_to_tracks(
             tracks_by_pasada,

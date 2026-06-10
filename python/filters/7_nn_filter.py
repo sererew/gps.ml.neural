@@ -30,11 +30,16 @@ from datetime import datetime, timedelta
 import gpxpy
 import gpxpy.gpx
 from pyproj import Transformer
+from scipy.interpolate import CubicSpline
 
 import tensorflow as tf
 from tensorflow.keras.models import load_model, Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout, Masking
 from accelerate.commands.menu import input
+
+
+CHANNEL_TO_INDEX = {"x": 0, "y": 1, "z": 2}
+ALL_CHANNELS = ("x", "y", "z")
 
 def parse_gpx(gpx_path):
     """
@@ -114,6 +119,194 @@ def meters_to_latlon(x, y, transformer, lat_ref=None, lon_ref=None):
     lon, lat = transformer.transform(x, y, direction='INVERSE')
     
     return lat, lon
+
+def parse_channels(value):
+    """Parse a comma-separated channel list."""
+    channels = [item.strip().lower() for item in value.split(",") if item.strip()]
+    unknown = sorted(set(channels) - set(ALL_CHANNELS))
+    if unknown:
+        raise ValueError(f"Unknown anchor channels: {unknown}. Use any of: {', '.join(ALL_CHANNELS)}")
+    return channels
+
+def infer_pattern_path(input_gpx):
+    """Infer the aligned pattern path from a preprocessed recording path."""
+    input_path = Path(input_gpx)
+    pasada = input_path.parent.name
+    pattern_path = input_path.parent / f"{pasada}_aligned_pattern_resampled.gpx"
+    if not pattern_path.exists():
+        raise FileNotFoundError(f"Pattern file not found for {input_gpx}: {pattern_path}")
+    return pattern_path
+
+def choose_anchor_indices(n_points, duration_s, anchors_per_hour, min_anchors, max_anchors, edge_skip_points=0):
+    """Choose anchor indices uniformly over the common track-pattern timeline."""
+    if n_points <= 0:
+        return np.asarray([], dtype=np.int64)
+
+    first_index = int(max(0, edge_skip_points))
+    last_index = int(min(n_points - 1, n_points - 1 - edge_skip_points))
+    if last_index <= first_index:
+        first_index = 0
+        last_index = n_points - 1
+
+    duration_hours = max(float(duration_s) / 3600.0, 0.0)
+    anchor_count = int(round(duration_hours * anchors_per_hour))
+    anchor_count = max(anchor_count, min_anchors)
+    if max_anchors and max_anchors > 0:
+        anchor_count = min(anchor_count, max_anchors)
+    anchor_count = max(2, min(anchor_count, last_index - first_index + 1))
+
+    return np.unique(np.linspace(first_index, last_index, anchor_count).round().astype(np.int64))
+
+def anchor_values(error, anchor_indices, channel_idx, radius):
+    """Return exact or local-mean error values at anchor indices."""
+    values = np.zeros(len(anchor_indices), dtype=np.float64)
+    for i, idx in enumerate(anchor_indices):
+        if radius <= 0:
+            values[i] = error[idx, channel_idx]
+            continue
+        start = max(0, int(idx) - radius)
+        end = min(len(error), int(idx) + radius + 1)
+        values[i] = float(np.mean(error[start:end, channel_idx]))
+    return values
+
+def interpolate_values(indices, values, n_points, interpolation):
+    """Interpolate sparse anchor values over all timesteps with clamped edges."""
+    if n_points <= 0:
+        return np.zeros(0, dtype=np.float64)
+    if len(indices) == 0:
+        return np.zeros(n_points, dtype=np.float64)
+    if len(indices) == 1:
+        return np.full(n_points, values[0], dtype=np.float64)
+
+    target = np.arange(n_points, dtype=np.float64)
+    indices_float = indices.astype(np.float64)
+    clipped_target = np.clip(target, indices_float[0], indices_float[-1])
+
+    if interpolation == "cubic" and len(indices) >= 3:
+        spline = CubicSpline(indices_float, values, bc_type="natural")
+        curve = spline(clipped_target)
+    else:
+        curve = np.interp(clipped_target, indices_float, values)
+
+    curve[target < indices_float[0]] = values[0]
+    curve[target > indices_float[-1]] = values[-1]
+    return curve
+
+def apply_pattern_anchor_correction(
+    filtered_df,
+    pattern_df,
+    anchors_per_hour=8.0,
+    min_anchors=8,
+    max_anchors=0,
+    anchor_error_radius=0,
+    anchor_channels="x,y,z",
+    anchor_interpolation="cubic",
+    anchor_edge_blend_points=30,
+    anchor_trim_to_pattern=False,
+    anchor_edge_skip_points=0,
+):
+    """Apply an experimental oracle slow correction using sparse pattern anchors."""
+    print("Applying experimental pattern-anchor slow correction...")
+    channels = parse_channels(anchor_channels)
+
+    track_indices = None
+    pattern_indices = None
+    if (
+        "time" in filtered_df.columns
+        and "time" in pattern_df.columns
+        and filtered_df["time"].notna().any()
+        and pattern_df["time"].notna().any()
+    ):
+        track_times = pd.to_datetime(filtered_df["time"], utc=True, errors="coerce")
+        pattern_times = pd.to_datetime(pattern_df["time"], utc=True, errors="coerce")
+        track_time_df = pd.DataFrame({"time": track_times, "track_idx": np.arange(len(filtered_df))}).dropna()
+        pattern_time_df = pd.DataFrame({"time": pattern_times, "pattern_idx": np.arange(len(pattern_df))}).dropna()
+        common = pd.merge(track_time_df, pattern_time_df, on="time", how="inner").sort_values("track_idx")
+        if len(common) >= 2:
+            track_indices = common["track_idx"].to_numpy(dtype=np.int64)
+            pattern_indices = common["pattern_idx"].to_numpy(dtype=np.int64)
+
+    if track_indices is None or pattern_indices is None:
+        n_common = min(len(filtered_df), len(pattern_df))
+        if n_common < 2:
+            raise ValueError("Need at least two common points for pattern-anchor correction")
+        track_indices = np.arange(n_common, dtype=np.int64)
+        pattern_indices = np.arange(n_common, dtype=np.int64)
+        print(f"Pattern-anchor alignment: positional fallback with {n_common} common points")
+    else:
+        print(f"Pattern-anchor alignment: matched {len(track_indices)} points by timestamp")
+
+    combined_lat = pd.concat([filtered_df["lat"], pattern_df["lat"]])
+    combined_lon = pd.concat([filtered_df["lon"], pattern_df["lon"]])
+    transformer = setup_projection(combined_lat.mean(), combined_lon.mean())
+    lat_ref = filtered_df["lat"].iloc[0]
+    lon_ref = filtered_df["lon"].iloc[0]
+
+    x_filt, y_filt = latlon_to_meters(filtered_df["lat"], filtered_df["lon"], transformer, lat_ref, lon_ref)
+    z_filt = filtered_df["ele"].to_numpy(dtype=np.float64)
+
+    x_pattern, y_pattern = latlon_to_meters(pattern_df["lat"], pattern_df["lon"], transformer, lat_ref, lon_ref)
+    z_pattern = pattern_df["ele"].to_numpy(dtype=np.float64)
+
+    filtered_pos = np.column_stack([x_filt, y_filt, z_filt])
+    pattern_pos = np.column_stack([x_pattern, y_pattern, z_pattern])
+    matched_error = filtered_pos[track_indices] - pattern_pos[pattern_indices]
+
+    if "time" in filtered_df.columns and filtered_df["time"].notna().any():
+        t0 = filtered_df["time"].iloc[int(track_indices[0])]
+        t1 = filtered_df["time"].iloc[int(track_indices[-1])]
+        try:
+            duration_s = max((t1 - t0).total_seconds(), 0.0)
+        except Exception:
+            duration_s = float(len(track_indices) - 1)
+    else:
+        duration_s = float(len(track_indices) - 1)
+
+    anchor_pair_indices = choose_anchor_indices(
+        len(track_indices),
+        duration_s,
+        anchors_per_hour,
+        min_anchors,
+        max_anchors,
+        anchor_edge_skip_points,
+    )
+    anchor_track_indices = track_indices[anchor_pair_indices]
+    print(
+        f"Pattern anchors: {len(anchor_track_indices)} anchors over {duration_s / 3600.0:.2f} h "
+        f"({anchors_per_hour:g}/h, min {min_anchors})"
+    )
+
+    correction = np.zeros((len(filtered_df), 3), dtype=np.float64)
+    for channel in channels:
+        channel_idx = CHANNEL_TO_INDEX[channel]
+        values = anchor_values(matched_error, anchor_pair_indices, channel_idx, anchor_error_radius)
+        curve = interpolate_values(
+            anchor_track_indices,
+            values,
+            len(filtered_df),
+            anchor_interpolation,
+        )
+        first_anchor = int(anchor_track_indices[0])
+        if first_anchor > 0:
+            curve[:first_anchor] = 0.0
+
+        if anchor_edge_blend_points > 0:
+            blend_end = min(len(curve), first_anchor + int(anchor_edge_blend_points) + 1)
+            if blend_end > first_anchor:
+                weights = np.linspace(0.0, 1.0, blend_end - first_anchor)
+                curve[first_anchor:blend_end] *= weights
+        correction[:, channel_idx] = curve
+
+    corrected_pos = filtered_pos - correction
+    lat_corr, lon_corr = meters_to_latlon(corrected_pos[:, 0], corrected_pos[:, 1], transformer, lat_ref, lon_ref)
+
+    corrected_df = filtered_df.copy()
+    corrected_df["lat"] = lat_corr
+    corrected_df["lon"] = lon_corr
+    corrected_df["ele"] = corrected_pos[:, 2]
+    if anchor_trim_to_pattern:
+        corrected_df = corrected_df.iloc[track_indices].copy().reset_index(drop=True)
+    return corrected_df
 
 def calculate_deltas(x, y, z):
     """
@@ -296,7 +489,17 @@ def apply_neural_network_filter(
     track_df,
     model_path="models/model_final_v3.keras",
     norm_stats_path="data/input/norm_stats_train.json",
-    model_output="residual"
+    model_output="residual",
+    pattern_gpx=None,
+    anchors_per_hour=8.0,
+    min_anchors=8,
+    max_anchors=0,
+    anchor_error_radius=0,
+    anchor_channels="x,y,z",
+    anchor_interpolation="cubic",
+    anchor_edge_blend_points=30,
+    anchor_trim_to_pattern=False,
+    anchor_edge_skip_points=0,
 ):
     """
     Aplica el filtro de red neuronal a un track con correcciones geodésicas.
@@ -386,10 +589,26 @@ def apply_neural_network_filter(
     filtered_df['lat'] = lat_filt
     filtered_df['lon'] = lon_filt
     filtered_df['ele'] = z_filt
+
+    if pattern_gpx is not None:
+        pattern_df = parse_gpx(pattern_gpx)
+        filtered_df = apply_pattern_anchor_correction(
+            filtered_df,
+            pattern_df,
+            anchors_per_hour=anchors_per_hour,
+            min_anchors=min_anchors,
+            max_anchors=max_anchors,
+            anchor_error_radius=anchor_error_radius,
+            anchor_channels=anchor_channels,
+            anchor_interpolation=anchor_interpolation,
+            anchor_edge_blend_points=anchor_edge_blend_points,
+            anchor_trim_to_pattern=anchor_trim_to_pattern,
+            anchor_edge_skip_points=anchor_edge_skip_points,
+        )
     
     return filtered_df
 
-def main():
+def main(default_slow_correction="none", default_anchor_trim_to_pattern=False, default_anchor_edge_skip_points=0):
     """Función principal."""
     parser = argparse.ArgumentParser(description='Filter GPS track using neural network')
     parser.add_argument('input_gpx', help='Input GPX file')
@@ -397,6 +616,18 @@ def main():
     parser.add_argument('--model', default='models/model_final_v3.keras', help='Path to trained model')
     parser.add_argument('--norm-stats', default='data/input/norm_stats_train.json', help='Path to normalization statistics')
     parser.add_argument('--model-output', choices=['residual', 'direct'], default='residual', help='Model output interpretation')
+    parser.add_argument('--slow-correction', choices=['none', 'pattern-anchor'], default=default_slow_correction, help='Experimental slow correction mode')
+    parser.add_argument('--pattern-gpx', default=None, help='Pattern GPX path for pattern-anchor correction')
+    parser.add_argument('--anchors-per-hour', type=float, default=8.0, help='Pattern-anchor density per hour')
+    parser.add_argument('--min-anchors', type=int, default=8, help='Minimum pattern anchors per track')
+    parser.add_argument('--max-anchors', type=int, default=0, help='Maximum pattern anchors per track; 0 means no cap')
+    parser.add_argument('--anchor-error-radius', type=int, default=0, help='Local radius for anchor error averaging')
+    parser.add_argument('--anchor-channels', default='x,y,z', help='Comma-separated channels for pattern-anchor correction')
+    parser.add_argument('--anchor-interpolation', choices=['linear', 'cubic'], default='cubic', help='Pattern-anchor interpolation mode')
+    parser.add_argument('--anchor-edge-blend-points', type=int, default=30, help='Points used to blend in the first pattern-anchor correction')
+    parser.add_argument('--anchor-edge-skip-points', type=int, default=default_anchor_edge_skip_points, help='Common-timeline edge points excluded from anchor selection')
+    parser.add_argument('--anchor-trim-to-pattern', action='store_true', default=default_anchor_trim_to_pattern, help='Trim output to the common pattern-track timeline')
+    parser.add_argument('--no-anchor-trim-to-pattern', dest='anchor_trim_to_pattern', action='store_false', help='Keep points outside the common pattern-track timeline')
     parser.add_argument('--suffix', default='nn_filtered', help='Suffix for auto-generated output filename')
     
     args = parser.parse_args()
@@ -425,12 +656,27 @@ def main():
         print(f"Processing {args.input_gpx}...")
         
         track_df = parse_gpx(args.input_gpx)
+
+        pattern_gpx = None
+        if args.slow_correction == 'pattern-anchor':
+            pattern_gpx = args.pattern_gpx or infer_pattern_path(args.input_gpx)
+            print(f"Pattern-anchor correction enabled with pattern: {pattern_gpx}")
         
         filtered_df = apply_neural_network_filter(
             track_df,
             model_path=args.model,
             norm_stats_path=args.norm_stats,
-            model_output=args.model_output
+            model_output=args.model_output,
+            pattern_gpx=pattern_gpx,
+            anchors_per_hour=args.anchors_per_hour,
+            min_anchors=args.min_anchors,
+            max_anchors=args.max_anchors,
+            anchor_error_radius=args.anchor_error_radius,
+            anchor_channels=args.anchor_channels,
+            anchor_interpolation=args.anchor_interpolation,
+            anchor_edge_blend_points=args.anchor_edge_blend_points,
+            anchor_trim_to_pattern=args.anchor_trim_to_pattern,
+            anchor_edge_skip_points=args.anchor_edge_skip_points,
         )
         
         create_gpx_with_gpxpy(

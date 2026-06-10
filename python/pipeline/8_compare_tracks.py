@@ -36,7 +36,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 import glob
-from geopy.distance import geodesic
+from pyproj import Transformer
 import xlsxwriter
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -46,6 +46,33 @@ import time
 ELEVATION_THRESHOLD = 5.0  # metros
 MIN_SPEED_KMH = 1.0  # km/h
 SLOPE_DISTANCE = 50.0  # metros
+
+_PATTERN_CACHE = {}
+
+def setup_projection(lat, lon):
+    """Create a local UTM transformer for fast metric calculations."""
+    zone = int((float(lon) + 180) / 6) + 1
+    epsg = 32600 + zone if float(lat) >= 0 else 32700 + zone
+    return Transformer.from_crs("EPSG:4326", f"EPSG:{epsg}", always_xy=True)
+
+def project_latlon(lat_values, lon_values, ref_lat=None, ref_lon=None):
+    """Project latitude/longitude arrays to metric UTM coordinates."""
+    lat_values = np.asarray(lat_values, dtype=np.float64)
+    lon_values = np.asarray(lon_values, dtype=np.float64)
+    if ref_lat is None:
+        ref_lat = float(np.nanmean(lat_values))
+    if ref_lon is None:
+        ref_lon = float(np.nanmean(lon_values))
+    transformer = setup_projection(ref_lat, ref_lon)
+    x, y = transformer.transform(lon_values, lat_values)
+    return np.asarray(x, dtype=np.float64), np.asarray(y, dtype=np.float64)
+
+def get_pattern_df(pattern_file):
+    """Read and cache pattern GPX data within each worker process."""
+    pattern_file = os.path.abspath(pattern_file)
+    if pattern_file not in _PATTERN_CACHE:
+        _PATTERN_CACHE[pattern_file] = parse_gpx(pattern_file)
+    return _PATTERN_CACHE[pattern_file]
 
 def parse_gpx(gpx_path):
     """
@@ -175,15 +202,11 @@ def calculate_distance_cumulative(df):
     """
     if len(df) < 2:
         return 0.0
-    
-    total_distance = 0.0
-    for i in range(1, len(df)):
-        coord1 = (df.iloc[i-1]['lat'], df.iloc[i-1]['lon'])
-        coord2 = (df.iloc[i]['lat'], df.iloc[i]['lon'])
-        distance = geodesic(coord1, coord2).meters
-        total_distance += distance
-    
-    return total_distance
+
+    x, y = project_latlon(df['lat'].to_numpy(), df['lon'].to_numpy())
+    dx = np.diff(x)
+    dy = np.diff(y)
+    return float(np.sqrt(dx * dx + dy * dy).sum())
 
 def calculate_elevation_gain_loss(df, threshold=None):
     """
@@ -277,23 +300,15 @@ def calculate_point_deviation_3d(track_df, pattern_df):
         # Interpolar track a los tiempos exactos del patrÃ³n
         track_df = interpolate_track_to_pattern_times(track_df, pattern_df)
     
-    deviations = []
-    
-    for i in range(len(track_df)):
-        # Distancia horizontal
-        coord_track = (track_df.iloc[i]['lat'], track_df.iloc[i]['lon'])
-        coord_pattern = (pattern_df.iloc[i]['lat'], pattern_df.iloc[i]['lon'])
-        horizontal_dist = geodesic(coord_track, coord_pattern).meters
-        
-        # Distancia vertical
-        vertical_dist = abs(track_df.iloc[i]['ele'] - pattern_df.iloc[i]['ele'])
-        
-        # Distancia 3D
-        deviation_3d = np.sqrt(horizontal_dist**2 + vertical_dist**2)
-        deviations.append(deviation_3d)
-    
-    deviations = np.array(deviations)
-    return np.mean(deviations), np.std(deviations)
+    ref_lat = float(pd.concat([track_df['lat'], pattern_df['lat']]).mean())
+    ref_lon = float(pd.concat([track_df['lon'], pattern_df['lon']]).mean())
+    track_x, track_y = project_latlon(track_df['lat'].to_numpy(), track_df['lon'].to_numpy(), ref_lat, ref_lon)
+    pattern_x, pattern_y = project_latlon(pattern_df['lat'].to_numpy(), pattern_df['lon'].to_numpy(), ref_lat, ref_lon)
+
+    horizontal_dist = np.sqrt((track_x - pattern_x) ** 2 + (track_y - pattern_y) ** 2)
+    vertical_dist = np.abs(track_df['ele'].to_numpy(dtype=np.float64) - pattern_df['ele'].to_numpy(dtype=np.float64))
+    deviations = np.sqrt(horizontal_dist ** 2 + vertical_dist ** 2)
+    return float(np.mean(deviations)), float(np.std(deviations))
 
 def find_pattern_file(pasada, preprocessed_dir):
     """
@@ -345,6 +360,23 @@ def find_all_filtered_tracks(filtered_dir):
     
     return filtered_tracks
 
+def select_filters(filtered_tracks, selected_filters):
+    """Return only the requested filters, validating names."""
+    if selected_filters is None:
+        return filtered_tracks
+
+    available_filters = sorted(filtered_tracks.keys())
+    invalid_filters = [name for name in selected_filters if name not in filtered_tracks]
+    if invalid_filters:
+        raise ValueError(
+            f"Invalid filters: {invalid_filters}. Available filters: {available_filters}"
+        )
+
+    selected = defaultdict(lambda: defaultdict(list))
+    for filter_name in selected_filters:
+        selected[filter_name] = filtered_tracks[filter_name]
+    return selected
+
 def calculate_track_metrics(track_df):
     """
     Calcula todas las mÃ©tricas de un track.
@@ -390,7 +422,7 @@ def process_single_track(track_file, pattern_file, filter_name):
         
         # Cargar track y patrÃ³n
         track_df = parse_gpx(track_file)
-        pattern_df = parse_gpx(pattern_file)
+        pattern_df = get_pattern_df(pattern_file)
         
         # Recortar track al rango temporal del patrÃ³n
         track_df, pattern_df, trim_info = trim_track_to_pattern_timerange(track_df, pattern_df)
@@ -460,7 +492,7 @@ def process_single_track_parallel(args):
     try:
         # Cargar track y patrÃ³n
         track_df = parse_gpx(track_file)
-        pattern_df = parse_gpx(pattern_file)
+        pattern_df = get_pattern_df(pattern_file)
         
         # Recortar track al rango temporal del patrÃ³n
         track_df, pattern_df, trim_info = trim_track_to_pattern_timerange(track_df, pattern_df)
@@ -557,7 +589,7 @@ def compare_all_tracks(filtered_tracks, preprocessed_dir, selected_pasadas=None)
     
     return results
 
-def compare_all_tracks_parallel(filtered_tracks, preprocessed_dir, selected_pasadas=None):
+def compare_all_tracks_parallel(filtered_tracks, preprocessed_dir, selected_pasadas=None, max_workers=None):
     """
     Compara todos los tracks filtrados con sus patrones usando procesamiento paralelo.
     
@@ -584,7 +616,7 @@ def compare_all_tracks_parallel(filtered_tracks, preprocessed_dir, selected_pasa
     print("ðŸ’¡ Press Ctrl+C to gracefully stop and save partial results")
     print()
     
-    with ProcessPoolExecutor() as executor:
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
         future_to_track = {}
         
         # Enviar todas las tareas al pool
@@ -823,9 +855,11 @@ def main():
     """FunciÃ³n principal."""
     parser = argparse.ArgumentParser(description='Compare filtered tracks with reference patterns')
     parser.add_argument('--pasadas', type=str, help='Comma-separated list of passes to process (e.g., "1,2,3")')
+    parser.add_argument('--filtros', type=str, help='Comma-separated list of filters to process (e.g., "nn,kalman")')
     parser.add_argument('--output', default='results/evaluation/track_comparison_results.xlsx', help='Output Excel file')
     parser.add_argument('--filtered-dir', default='results/filtered', help='Directory with filtered tracks')
     parser.add_argument('--preprocessed-dir', default='data/preprocessed', help='Directory with preprocessed tracks and patterns')
+    parser.add_argument('--max-workers', type=int, default=None, help='Maximum parallel workers (default: CPU count)')
     
     args = parser.parse_args()
     
@@ -850,6 +884,11 @@ def main():
         if args.pasadas:
             selected_pasadas = [p.strip() for p in args.pasadas.split(',')]
             print(f"Processing only pasadas: {selected_pasadas}")
+
+        selected_filters = None
+        if args.filtros:
+            selected_filters = [f.strip() for f in args.filtros.split(',') if f.strip()]
+            print(f"Processing only filters: {selected_filters}")
         
         # Encontrar todos los tracks filtrados
         print("Finding filtered tracks...")
@@ -858,6 +897,8 @@ def main():
         if not filtered_tracks:
             print("ERROR: No filtered tracks found")
             sys.exit(1)
+
+        filtered_tracks = select_filters(filtered_tracks, selected_filters)
         
         total_tracks = sum(len(tracks) for pasadas in filtered_tracks.values() for tracks in pasadas.values())
         print(f"Found {len(filtered_tracks)} filters with {total_tracks} total tracks")
@@ -868,7 +909,12 @@ def main():
         
         # Comparar todos los tracks
         print("\nStarting track comparison...")
-        results = compare_all_tracks_parallel(filtered_tracks, args.preprocessed_dir, selected_pasadas)
+        results = compare_all_tracks_parallel(
+            filtered_tracks,
+            args.preprocessed_dir,
+            selected_pasadas,
+            max_workers=args.max_workers,
+        )
         
         if not results:
             print("ERROR: No comparison results generated")
