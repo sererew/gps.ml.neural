@@ -213,7 +213,7 @@ def parse_args():
     )
     parser.add_argument("--data_root", default="data/input", help="Input dataset root")
     parser.add_argument("--split", default="test", choices=["train", "val", "test"], help="Dataset split")
-    parser.add_argument("--model", default="models/model_best_v3.keras", help="Keras model path")
+    parser.add_argument("--model", default="models/model_final_v3.keras", help="Keras model path")
     parser.add_argument("--output_dir", default="results/diagnostics/slow_drift_pattern_v3_w1800", help="Output directory")
     parser.add_argument("--smooth_window", type=int, default=1800, help="Moving-average window in timesteps")
     parser.add_argument("--n_bins", type=int, default=20, help="Number of normalized-time bins")

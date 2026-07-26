@@ -1,24 +1,24 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Script para comparar todos los tracks filtrados con sus patrones de referencia.
 
 Este script:
 1. Busca todos los tracks filtrados en results/filtered/<filtro>/<pasada>/
 2. Los compara con sus patrones de referencia en data/preprocessed/<pasada>/
-3. Calcula mÃ©tricas de desviaciÃ³n (distancia, desnivel, desviaciÃ³n 3D)
+3. Calcula métricas de desviación (distancia, desnivel, desviación 3D)
 4. Genera un Excel con resultados comparativos de todos los filtros
 
-IMPORTANTE: Solo se comparan puntos dentro del rango temporal del patrÃ³n,
-excluyendo puntos que estÃ©n antes del inicio o despuÃ©s del final del patrÃ³n.
+IMPORTANTE: Solo se comparan puntos dentro del rango temporal del patrón,
+excluyendo puntos que estén antes del inicio o después del final del patrón.
 
-MÃ©tricas calculadas:
+Métricas calculadas:
 - Distancia total, desnivel positivo/negativo (con y sin umbral)
-- DesviaciÃ³n punto a punto 3D (media y desviaciÃ³n estÃ¡ndar)
-- Todas las mÃ©tricas como desviaciÃ³n respecto al patrÃ³n
+- Desviación punto a punto 3D (media y desviación estándar)
+- Todas las métricas como desviación respecto al patrón
 
 Umbrales:
-- Desnivel con umbral: 5m de diferencia de altura con recpecto al Ãºltimo punto acumulado
-- Velocidad mÃ­nima de movimiento: 1 km/h  
+- Desnivel con umbral: 5m de diferencia de altura con recpecto al último punto acumulado
+- Velocidad mínima de movimiento: 1 km/h  
 - Distancia para pendientes: 50 m
 
 Uso:
@@ -42,7 +42,7 @@ from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import time
 
-# ConfiguraciÃ³n de umbrales
+# Configuración de umbrales
 ELEVATION_THRESHOLD = 5.0  # metros
 MIN_SPEED_KMH = 1.0  # km/h
 SLOPE_DISTANCE = 50.0  # metros
@@ -98,7 +98,7 @@ def parse_gpx(gpx_path):
             lat = float(trkpt.get('lat'))
             lon = float(trkpt.get('lon'))
             
-            # ElevaciÃ³n
+            # Elevación
             ele_elem = trkpt.find('gpx:ele', ns)
             ele = float(ele_elem.text) if ele_elem is not None else 0.0
             
@@ -122,7 +122,7 @@ def parse_gpx(gpx_path):
     
     df = pd.DataFrame(points)
     
-    # Convertir tiempo si estÃ¡ disponible
+    # Convertir tiempo si está disponible
     if df['time'].notna().any():
         df['time'] = pd.to_datetime(df['time'], errors='coerce')
     
@@ -130,14 +130,14 @@ def parse_gpx(gpx_path):
 
 def trim_track_to_pattern_timerange(track_df, pattern_df):
     """
-    Recorta tanto el track como el patrÃ³n al rango temporal comÃºn entre ambos.
+    Recorta tanto el track como el patrón al rango temporal común entre ambos.
     
     Args:
         track_df: DataFrame del track filtrado
-        pattern_df: DataFrame del patrÃ³n de referencia
+        pattern_df: DataFrame del patrón de referencia
         
     Returns:
-        tuple: (track_recortado, patrÃ³n_recortado, dict con informaciÃ³n del recorte)
+        tuple: (track_recortado, patrón_recortado, dict con información del recorte)
     """
     trim_info = {
         'is_trimmed': False,
@@ -160,28 +160,28 @@ def trim_track_to_pattern_timerange(track_df, pattern_df):
     trim_info['pattern_time_range'] = f"{pattern_start_original} to {pattern_end_original}"
     trim_info['track_time_range'] = f"{track_start} to {track_end}"
     
-    # Calcular rango temporal comÃºn (intersecciÃ³n)
+    # Calcular rango temporal común (intersección)
     trim_start = max(pattern_start_original, track_start)
     trim_end = min(pattern_end_original, track_end)
     
-    # Verificar si hay recorte del patrÃ³n original
+    # Verificar si hay recorte del patrón original
     if track_start > pattern_start_original or track_end < pattern_end_original:
         trim_info['is_trimmed'] = True
         
-        # Calcular cobertura del patrÃ³n original
+        # Calcular cobertura del patrón original
         pattern_duration_original = (pattern_end_original - pattern_start_original).total_seconds()
         covered_duration = (trim_end - trim_start).total_seconds()
         
         if pattern_duration_original > 0:
             trim_info['pattern_coverage_percent'] = (covered_duration / pattern_duration_original) * 100
         
-        # Contar puntos perdidos del patrÃ³n original
+        # Contar puntos perdidos del patrón original
         if track_start > pattern_start_original:
             trim_info['points_lost_start'] = len(pattern_df[pattern_df['time'] < track_start])
         if track_end < pattern_end_original:
             trim_info['points_lost_end'] = len(pattern_df[pattern_df['time'] > track_end])
     
-    # Aplicar recorte temporal a AMBOS (track y patrÃ³n)
+    # Aplicar recorte temporal a AMBOS (track y patrón)
     track_mask = (track_df['time'] >= trim_start) & (track_df['time'] <= trim_end)
     pattern_mask = (pattern_df['time'] >= trim_start) & (pattern_df['time'] <= trim_end)
     
@@ -215,8 +215,8 @@ def calculate_elevation_gain_loss(df, threshold=None):
     Args:
         df: DataFrame con columna ele
         threshold: Si es None, calcula sin umbral punto a punto.
-                  Si es un nÃºmero, acumula cambios sÃ³lo cuando la diferencia
-                  entre la elevaciÃ³n actual y la Ãºltima elevaciÃ³n acumulada
+                  Si es un número, acumula cambios sólo cuando la diferencia
+                  entre la elevación actual y la última elevación acumulada
                   (referencia) es mayor o igual al umbral.
 
     Returns:
@@ -228,8 +228,8 @@ def calculate_elevation_gain_loss(df, threshold=None):
     gain = 0.0
     loss = 0.0
 
-    # Usar la primera elevaciÃ³n como referencia inicial. En el caso
-    # threshold is None se actualizarÃ¡ la referencia en cada iteraciÃ³n,
+    # Usar la primera elevación como referencia inicial. En el caso
+    # threshold is None se actualizará la referencia en cada iteración,
     # reproduciendo el comportamiento punto-a-punto.
     ref_elevation = df.iloc[0]['ele']
 
@@ -238,7 +238,7 @@ def calculate_elevation_gain_loss(df, threshold=None):
         elevation_change = current_elevation - ref_elevation
 
         # Si no hay umbral, aceptamos siempre el cambio (comportamiento punto a punto).
-        # Si hay umbral, sÃ³lo acumulamos y actualizamos la referencia cuando la
+        # Si hay umbral, sólo acumulamos y actualizamos la referencia cuando la
         # diferencia absoluta es >= threshold.
         if threshold is None or abs(elevation_change) >= threshold:
             if elevation_change > 0:
@@ -246,34 +246,34 @@ def calculate_elevation_gain_loss(df, threshold=None):
             else:
                 loss += abs(elevation_change)
 
-            # Actualizar referencia sÃ³lo cuando se ha acumulado el cambio
-            # (o siempre si threshold es None porque la condiciÃ³n anterior se cumple).
+            # Actualizar referencia sólo cuando se ha acumulado el cambio
+            # (o siempre si threshold es None porque la condición anterior se cumple).
             ref_elevation = current_elevation
 
     return gain, loss
 
 def interpolate_track_to_pattern_times(track_df, pattern_df):
     """
-    Interpola un track para que tenga exactamente los mismos tiempos que el patrÃ³n.
+    Interpola un track para que tenga exactamente los mismos tiempos que el patrón.
     
     Args:
         track_df: DataFrame del track filtrado
-        pattern_df: DataFrame del patrÃ³n de referencia
+        pattern_df: DataFrame del patrón de referencia
         
     Returns:
-        DataFrame del track interpolado a los tiempos del patrÃ³n
+        DataFrame del track interpolado a los tiempos del patrón
     """
     if track_df['time'].isna().any() or pattern_df['time'].isna().any():
         print("Warning: Missing time data, cannot interpolate by time")
         return track_df
     
-    # Convertir tiempos a segundos desde el primer punto del patrÃ³n
+    # Convertir tiempos a segundos desde el primer punto del patrón
     pattern_start = pattern_df['time'].min()
     pattern_times_sec = (pattern_df['time'] - pattern_start).dt.total_seconds()
     track_times_sec = (track_df['time'] - pattern_start).dt.total_seconds()
     
-    # Interpolar cada coordenada del track a los tiempos del patrÃ³n
-    interpolated_track = pattern_df[['time']].copy()  # Mantener tiempos del patrÃ³n
+    # Interpolar cada coordenada del track a los tiempos del patrón
+    interpolated_track = pattern_df[['time']].copy()  # Mantener tiempos del patrón
     
     # Interpolar lat, lon, ele
     interpolated_track['lat'] = np.interp(pattern_times_sec, track_times_sec, track_df['lat'])
@@ -286,18 +286,18 @@ def interpolate_track_to_pattern_times(track_df, pattern_df):
 
 def calculate_point_deviation_3d(track_df, pattern_df):
     """
-    Calcula desviaciÃ³n 3D punto a punto entre track y patrÃ³n.
+    Calcula desviación 3D punto a punto entre track y patrón.
     
     Args:
         track_df: DataFrame del track filtrado
-        pattern_df: DataFrame del patrÃ³n de referencia
+        pattern_df: DataFrame del patrón de referencia
         
     Returns:
         tuple: (mean_deviation, std_deviation) en metros
     """
     if len(track_df) != len(pattern_df):
         print(f"Length mismatch - track: {len(track_df)}, pattern: {len(pattern_df)}")
-        # Interpolar track a los tiempos exactos del patrÃ³n
+        # Interpolar track a los tiempos exactos del patrón
         track_df = interpolate_track_to_pattern_times(track_df, pattern_df)
     
     ref_lat = float(pd.concat([track_df['lat'], pattern_df['lat']]).mean())
@@ -312,14 +312,14 @@ def calculate_point_deviation_3d(track_df, pattern_df):
 
 def find_pattern_file(pasada, preprocessed_dir):
     """
-    Encuentra el archivo de patrÃ³n para una pasada dada.
+    Encuentra el archivo de patrón para una pasada dada.
     
     Args:
         pasada: Nombre de la pasada
         preprocessed_dir: Directorio de archivos preprocessados
         
     Returns:
-        str: Ruta al archivo de patrÃ³n
+        str: Ruta al archivo de patrón
     """
     pattern_file = os.path.join(preprocessed_dir, pasada, f"{pasada}_aligned_pattern_resampled.gpx")
     
@@ -333,7 +333,7 @@ def find_all_filtered_tracks(filtered_dir):
     Encuentra todos los tracks filtrados organizados por filtro y pasada.
     
     Args:
-        filtered_dir: Directorio raÃ­z de tracks filtrados
+        filtered_dir: Directorio raíz de tracks filtrados
         
     Returns:
         dict: {filter_name: {pasada: [track_files]}}
@@ -379,17 +379,17 @@ def select_filters(filtered_tracks, selected_filters):
 
 def calculate_track_metrics(track_df):
     """
-    Calcula todas las mÃ©tricas de un track.
+    Calcula todas las métricas de un track.
     
     Args:
         track_df: DataFrame del track
         
     Returns:
-        dict: Diccionario con todas las mÃ©tricas
+        dict: Diccionario con todas las métricas
     """
     metrics = {}
     
-    # MÃ©tricas bÃ¡sicas
+    # Métricas básicas
     metrics['total_points'] = len(track_df)
     metrics['total_length'] = calculate_distance_cumulative(track_df)
     
@@ -407,37 +407,37 @@ def calculate_track_metrics(track_df):
 
 def process_single_track(track_file, pattern_file, filter_name):
     """
-    Procesa un track individual comparÃ¡ndolo con su patrÃ³n.
+    Procesa un track individual comparándolo con su patrón.
     
     Args:
         track_file: Ruta al track filtrado
-        pattern_file: Ruta al patrÃ³n de referencia
+        pattern_file: Ruta al patrón de referencia
         filter_name: Nombre del filtro
         
     Returns:
-        dict: Resultados de la comparaciÃ³n
+        dict: Resultados de la comparación
     """
     try:
         print(f"    Processing: {os.path.basename(track_file)}")
         
-        # Cargar track y patrÃ³n
+        # Cargar track y patrón
         track_df = parse_gpx(track_file)
         pattern_df = get_pattern_df(pattern_file)
         
-        # Recortar track al rango temporal del patrÃ³n
+        # Recortar track al rango temporal del patrón
         track_df, pattern_df, trim_info = trim_track_to_pattern_timerange(track_df, pattern_df)
         
         if len(track_df) == 0:
             print(f"Warning: No overlapping time range found")
             return None
         
-        # Calcular mÃ©tricas del patrÃ³n
+        # Calcular métricas del patrón
         pattern_metrics = calculate_track_metrics(pattern_df)
         
-        # Calcular mÃ©tricas del track filtrado
+        # Calcular métricas del track filtrado
         track_metrics = calculate_track_metrics(track_df)
         
-        # Calcular desviaciÃ³n punto a punto 3D
+        # Calcular desviación punto a punto 3D
         mean_dev_3d, std_dev_3d = calculate_point_deviation_3d(track_df, pattern_df)
         
         # Crear resultado
@@ -446,14 +446,14 @@ def process_single_track(track_file, pattern_file, filter_name):
             'filter_name': filter_name,
             'total_points': track_metrics['total_points'],
             
-            # MÃ©tricas del patrÃ³n
+            # Métricas del patrón
             'total_pattern_length': pattern_metrics['total_length'],
             'total_pattern_elevation_gain': pattern_metrics['total_elevation_gain'],
             'total_pattern_elevation_loss': pattern_metrics['total_elevation_loss'],
             'total_pattern_elevation_gain_threshold': pattern_metrics['total_elevation_gain_threshold'],
             'total_pattern_elevation_loss_threshold': pattern_metrics['total_elevation_loss_threshold'],
             
-            # Desviaciones respecto al patrÃ³n
+            # Desviaciones respecto al patrón
             'total_length_deviation': track_metrics['total_length'] - pattern_metrics['total_length'],
             'total_elevation_gain_deviation': track_metrics['total_elevation_gain'] - pattern_metrics['total_elevation_gain'],
             'total_elevation_loss_deviation': track_metrics['total_elevation_loss'] - pattern_metrics['total_elevation_loss'],
@@ -462,7 +462,7 @@ def process_single_track(track_file, pattern_file, filter_name):
             'mean_point_deviation': mean_dev_3d,
             'std_point_deviation': std_dev_3d,
             
-            # InformaciÃ³n de recorte
+            # Información de recorte
             'is_trimmed': trim_info['is_trimmed'],
             'pattern_coverage_percent': trim_info['pattern_coverage_percent'],
             'track_time_range': trim_info['track_time_range'],
@@ -479,35 +479,35 @@ def process_single_track(track_file, pattern_file, filter_name):
 
 def process_single_track_parallel(args):
     """
-    FunciÃ³n auxiliar para procesamiento paralelo.
+    Función auxiliar para procesamiento paralelo.
     
     Args:
         args: Tupla con (track_file, pattern_file, filter_name, pasada)
         
     Returns:
-        dict: Resultados de la comparaciÃ³n con pasada incluida
+        dict: Resultados de la comparación con pasada incluida
     """
     track_file, pattern_file, filter_name, pasada = args
     
     try:
-        # Cargar track y patrÃ³n
+        # Cargar track y patrón
         track_df = parse_gpx(track_file)
         pattern_df = get_pattern_df(pattern_file)
         
-        # Recortar track al rango temporal del patrÃ³n
+        # Recortar track al rango temporal del patrón
         track_df, pattern_df, trim_info = trim_track_to_pattern_timerange(track_df, pattern_df)
         
         if len(track_df) == 0:
             print(f"Warning: No overlapping time range found for {os.path.basename(track_file)}")
             return None
         
-        # Calcular mÃ©tricas del patrÃ³n
+        # Calcular métricas del patrón
         pattern_metrics = calculate_track_metrics(pattern_df)
         
-        # Calcular mÃ©tricas del track filtrado
+        # Calcular métricas del track filtrado
         track_metrics = calculate_track_metrics(track_df)
         
-        # Calcular desviaciÃ³n punto a punto 3D
+        # Calcular desviación punto a punto 3D
         mean_dev_3d, std_dev_3d = calculate_point_deviation_3d(track_df, pattern_df)
         
         # Crear resultado
@@ -517,14 +517,14 @@ def process_single_track_parallel(args):
             'filter_name': filter_name,
             'total_points': track_metrics['total_points'],
             
-            # MÃ©tricas del patrÃ³n
+            # Métricas del patrón
             'total_pattern_length': pattern_metrics['total_length'],
             'total_pattern_elevation_gain': pattern_metrics['total_elevation_gain'],
             'total_pattern_elevation_loss': pattern_metrics['total_elevation_loss'],
             'total_pattern_elevation_gain_threshold': pattern_metrics['total_elevation_gain_threshold'],
             'total_pattern_elevation_loss_threshold': pattern_metrics['total_elevation_loss_threshold'],
             
-            # Desviaciones respecto al patrÃ³n
+            # Desviaciones respecto al patrón
             'total_length_deviation': track_metrics['total_length'] - pattern_metrics['total_length'],
             'total_elevation_gain_deviation': track_metrics['total_elevation_gain'] - pattern_metrics['total_elevation_gain'],
             'total_elevation_loss_deviation': track_metrics['total_elevation_loss'] - pattern_metrics['total_elevation_loss'],
@@ -533,7 +533,7 @@ def process_single_track_parallel(args):
             'mean_point_deviation': mean_dev_3d,
             'std_point_deviation': std_dev_3d,
             
-            # InformaciÃ³n de recorte
+            # Información de recorte
             'is_trimmed': trim_info['is_trimmed'],
          
             'pattern_coverage_percent': trim_info['pattern_coverage_percent'],
@@ -559,7 +559,7 @@ def compare_all_tracks(filtered_tracks, preprocessed_dir, selected_pasadas=None)
         selected_pasadas: Lista de pasadas a procesar (None = todas)
         
     Returns:
-        list: Lista de resultados de comparaciÃ³n
+        list: Lista de resultados de comparación
     """
     results = []
     
@@ -573,7 +573,7 @@ def compare_all_tracks(filtered_tracks, preprocessed_dir, selected_pasadas=None)
             print(f"  Processing pasada: {pasada}")
             
             try:
-                # Encontrar archivo de patrÃ³n
+                # Encontrar archivo de patrón
                 pattern_file = find_pattern_file(pasada, preprocessed_dir)
                 
                 # Procesar cada track de esta pasada
@@ -599,7 +599,7 @@ def compare_all_tracks_parallel(filtered_tracks, preprocessed_dir, selected_pasa
         selected_pasadas: Lista de pasadas a procesar (None = todas)
         
     Returns:
-        list: Lista de resultados de comparaciÃ³n
+        list: Lista de resultados de comparación
     """
     results = []
     total_tasks = 0
@@ -612,8 +612,8 @@ def compare_all_tracks_parallel(filtered_tracks, preprocessed_dir, selected_pasa
                 continue
             total_tasks += len(track_files)
     
-    print(f"ðŸ“Š Total tasks to process: {total_tasks}")
-    print("ðŸ’¡ Press Ctrl+C to gracefully stop and save partial results")
+    print(f"📊 Total tasks to process: {total_tasks}")
+    print("💡 Press Ctrl+C to gracefully stop and save partial results")
     print()
     
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
@@ -621,16 +621,16 @@ def compare_all_tracks_parallel(filtered_tracks, preprocessed_dir, selected_pasa
         
         # Enviar todas las tareas al pool
         for filter_name, pasadas_dict in filtered_tracks.items():
-            print(f"\nðŸ”„ Processing filter: {filter_name}")
+            print(f"\n🔄 Processing filter: {filter_name}")
             
             for pasada, track_files in pasadas_dict.items():
                 if selected_pasadas is not None and pasada not in selected_pasadas:
                     continue
                     
-                print(f"  ðŸ“ Processing pasada: {pasada} ({len(track_files)} tracks)")
+                print(f"  📁 Processing pasada: {pasada} ({len(track_files)} tracks)")
                 
                 try:
-                    # Encontrar archivo de patrÃ³n
+                    # Encontrar archivo de patrón
                     pattern_file = find_pattern_file(pasada, preprocessed_dir)
                     
                     # Asignar tarea para cada track de esta pasada
@@ -643,14 +643,14 @@ def compare_all_tracks_parallel(filtered_tracks, preprocessed_dir, selected_pasa
                         }
                 
                 except Exception as e:
-                    print(f"âŒ Error processing pasada {pasada}: {e}")
+                    print(f"❌ Error processing pasada {pasada}: {e}")
                     continue
         
-        print(f"\nâ³ Processing {len(future_to_track)} tasks in parallel...")
+        print(f"\n⏳ Processing {len(future_to_track)} tasks in parallel...")
         start_time = time.time()
         last_progress_time = start_time
         
-        # Recolectar resultados conforme van completÃ¡ndose
+        # Recolectar resultados conforme van completándose
         for future in as_completed(future_to_track):
             track_info = future_to_track[future]
             track_file = track_info['track_file']
@@ -683,34 +683,34 @@ def compare_all_tracks_parallel(filtered_tracks, preprocessed_dir, selected_pasa
                     # Barra de progreso simple
                     bar_width = 30
                     filled = int(bar_width * percent_done / 100)
-                    bar = "â–ˆ" * filled + "â–‘" * (bar_width - filled)
+                    bar = "█" * filled + "░" * (bar_width - filled)
                     
-                    print(f"ðŸ“ˆ Progress: [{bar}] {completed_tasks}/{total_tasks} ({percent_done:.1f}%) | "
+                    print(f"📈 Progress: [{bar}] {completed_tasks}/{total_tasks} ({percent_done:.1f}%) | "
                           f"Rate: {rate:.1f} tracks/s | ETA: {eta_str}")
                     
                     last_progress_time = current_time
                     
             except Exception as e:
-                print(f"âŒ Error processing {os.path.basename(track_file)}: {e}")
+                print(f"❌ Error processing {os.path.basename(track_file)}: {e}")
                 completed_tasks += 1
                 continue
     
     final_count = len(results)
     total_elapsed = time.time() - start_time
     
-    print(f"\nâœ… Processing completed!")
-    print(f"ðŸ“Š Results: {final_count}/{total_tasks} tracks processed successfully")
-    print(f"â±ï¸  Total time: {total_elapsed/60:.1f} minutes")
-    print(f"ðŸš€ Average rate: {final_count/total_elapsed:.1f} tracks/second")
+    print(f"\n✅ Processing completed!")
+    print(f"📊 Results: {final_count}/{total_tasks} tracks processed successfully")
+    print(f"⏱️  Total time: {total_elapsed/60:.1f} minutes")
+    print(f"🚀 Average rate: {final_count/total_elapsed:.1f} tracks/second")
     
     return results
 
 def create_excel_report(results, output_file):
     """
-    Crea un reporte en Excel con todos los resultados de comparaciÃ³n.
+    Crea un reporte en Excel con todos los resultados de comparación.
     
     Args:
-        results: Lista de resultados de comparaciÃ³n
+        results: Lista de resultados de comparación
         output_file: Ruta del archivo Excel de salida
     """
     print(f"\nCreating Excel report: {output_file}")
@@ -722,15 +722,15 @@ def create_excel_report(results, output_file):
         print("Warning: No results to save")
         return
     
-    # Reorganizar columnas incluyendo informaciÃ³n de recorte
+    # Reorganizar columnas incluyendo información de recorte
     column_order = [
         'pasada', 'track_name', 'filter_name', 'total_points',
-        # InformaciÃ³n de recorte temporal
+        # Información de recorte temporal
         'is_trimmed', 'pattern_coverage_percent', 'points_lost_start', 'points_lost_end',
-        # MÃ©tricas del patrÃ³n (pueden estar afectadas por recorte)
+        # Métricas del patrón (pueden estar afectadas por recorte)
         'total_pattern_length', 'total_pattern_elevation_gain', 'total_pattern_elevation_loss',
         'total_pattern_elevation_gain_threshold', 'total_pattern_elevation_loss_threshold',
-        # Desviaciones respecto al patrÃ³n
+        # Desviaciones respecto al patrón
         'total_length_deviation', 'total_elevation_gain_deviation', 'total_elevation_loss_deviation',
         'total_elevation_gain_deviation_threshold', 'total_elevation_loss_deviation_threshold',
         'mean_point_deviation', 'std_point_deviation',
@@ -742,6 +742,7 @@ def create_excel_report(results, output_file):
     df = df[column_order]
     
     # Crear workbook
+    Path(output_file).parent.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(output_file, engine='xlsxwriter') as writer:
         # Escribir datos principales
         df.to_excel(writer, sheet_name='Track_Comparison', index=False)
@@ -771,7 +772,7 @@ def create_excel_report(results, output_file):
         summary_df = pd.DataFrame(summary_data)
         summary_df.to_excel(writer, sheet_name='Filter_Summary', index=False)
         
-        # Crear hoja de anÃ¡lisis de recortes
+        # Crear hoja de análisis de recortes
         trim_analysis = df[df['is_trimmed'] == True].copy() if 'is_trimmed' in df.columns else pd.DataFrame()
         if not trim_analysis.empty:
             trim_summary = trim_analysis.groupby(['pasada', 'filter_name']).agg({
@@ -793,7 +794,7 @@ def create_excel_report(results, output_file):
         worksheet1 = writer.sheets['Track_Comparison']
         worksheet2 = writer.sheets['Filter_Summary']
         
-        # Formato para nÃºmeros
+        # Formato para números
         number_format = workbook.add_format({'num_format': '0.00'})
         percent_format = workbook.add_format({'num_format': '0.0%'})
         header_format = workbook.add_format({'bold': True, 'bg_color': '#D7E4BC'})
@@ -822,10 +823,10 @@ def create_excel_report(results, output_file):
                 worksheet1.write(row + 1, coverage_col, coverage_value, percent_format)
         
         # Ajustar ancho de columnas
-        worksheet1.set_column('A:V', 18)  # MÃ¡s columnas ahora
+        worksheet1.set_column('A:V', 18)  # Más columnas ahora
         worksheet2.set_column('A:M', 20)
         
-        # AÃ±adir hoja de explicaciÃ³n
+        # Añadir hoja de explicación
         if 'Trimming_Analysis' in writer.sheets:
             worksheet3 = writer.sheets['Trimming_Analysis']
             worksheet3.set_column('A:H', 18)
@@ -835,7 +836,7 @@ def create_excel_report(results, output_file):
     print(f"  Filters analyzed: {df['filter_name'].nunique()}")
     print(f"  Pasadas processed: {df['pasada'].nunique()}")
     
-    # EstadÃ­sticas de recortes
+    # Estadísticas de recortes
     if 'is_trimmed' in df.columns:
         trimmed_count = df['is_trimmed'].sum()
         total_count = len(df)
@@ -852,7 +853,7 @@ def create_excel_report(results, output_file):
         print(f"  - Trimming_Analysis: Analysis of temporal trimming effects")
 
 def main():
-    """FunciÃ³n principal."""
+    """Función principal."""
     parser = argparse.ArgumentParser(description='Compare filtered tracks with reference patterns')
     parser.add_argument('--pasadas', type=str, help='Comma-separated list of passes to process (e.g., "1,2,3")')
     parser.add_argument('--filtros', type=str, help='Comma-separated list of filters to process (e.g., "nn,kalman")')

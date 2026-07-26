@@ -101,7 +101,7 @@ def parse_args():
     )
     parser.add_argument("--data_root", default="data/input", help="Input dataset root")
     parser.add_argument("--split", default="test", choices=["train", "val", "test"], help="Dataset split")
-    parser.add_argument("--model", default="models/model_best_v3.keras", help="Keras model path")
+    parser.add_argument("--model", default="models/model_final_v3.keras", help="Keras model path")
     parser.add_argument("--output", default="results/evaluation/evaluation_v3_1_test.json", help="Output JSON path")
     parser.add_argument("--batch_size", type=int, default=32, help="Prediction batch size")
     parser.add_argument("--limit", type=int, default=None, help="Optional number of windows to process")

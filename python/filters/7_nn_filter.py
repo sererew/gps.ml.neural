@@ -35,7 +35,6 @@ from scipy.interpolate import CubicSpline
 import tensorflow as tf
 from tensorflow.keras.models import load_model, Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout, Masking
-from accelerate.commands.menu import input
 
 
 CHANNEL_TO_INDEX = {"x": 0, "y": 1, "z": 2}
