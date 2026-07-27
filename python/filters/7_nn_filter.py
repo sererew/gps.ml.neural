@@ -23,6 +23,8 @@ import json
 import argparse
 import sys
 import os
+import tempfile
+import zipfile
 from pathlib import Path
 from datetime import datetime, timedelta
 
@@ -460,6 +462,38 @@ def residual_mae_loss(y_true, y_pred):
     """Per-timestep MAE for residual correction models."""
     return tf.reduce_mean(tf.abs(y_pred - y_true), axis=-1)
 
+def create_v3_model(sequence_length=3600, n_features=3):
+    """Create the residual v3 architecture for weight-only fallback loading."""
+    model = Sequential(
+        [
+            tf.keras.layers.Input(shape=(sequence_length, n_features), name="input_layer"),
+            Masking(mask_value=0.0, name="masking"),
+            LSTM(
+                128,
+                return_sequences=True,
+                dropout=0.1,
+                recurrent_dropout=0.0,
+                name="lstm",
+            ),
+            Dense(64, activation="relu", name="dense"),
+            Dropout(0.2, name="dropout"),
+            Dense(n_features, activation="linear", name="dense_1"),
+        ]
+    )
+    model(np.zeros((1, sequence_length, n_features), dtype=np.float32))
+    return model
+
+def load_v3_weights_fallback(model_path):
+    """Load a v3 .keras archive by rebuilding the architecture and loading weights."""
+    model = create_v3_model()
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        with zipfile.ZipFile(model_path, "r") as archive:
+            archive.extract("model.weights.h5", tmp_dir)
+        weights_path = Path(tmp_dir) / "model.weights.h5"
+        model.load_weights(weights_path)
+    print("Model loaded with v3 weight fallback.")
+    return model
+
 def load_model_robust(model_path):
     """Load the model robustly."""
     print("Loading neural network model...")
@@ -475,12 +509,17 @@ def load_model_robust(model_path):
         print("Model loaded successfully with custom objects.")
         return model
     except Exception as e:
-        print(f"Warning: {e}")
+        print(f"Direct model load failed ({e.__class__.__name__}); trying compile=False.")
     
     try:
         model = load_model(model_path, compile=False)
         print("Model loaded successfully without compilation.")
         return model
+    except Exception as e:
+        print(f"Model load with compile=False failed ({e.__class__.__name__}); trying v3 weight fallback.")
+
+    try:
+        return load_v3_weights_fallback(model_path)
     except Exception as e:
         raise RuntimeError(f"Failed to load model from {model_path}: {e}")
 
