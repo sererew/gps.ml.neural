@@ -393,7 +393,12 @@ def plot_band_ratio_summary(summary_df, output_path, channels=("xy", "z")):
     """Plot band-power ratios and total residual error energy by channel."""
     ratio_col = "ratio_to_raw" if "ratio_to_raw" in summary_df.columns else "mean_ratio_to_raw"
     pct_col = "band_pct" if "band_pct" in summary_df.columns else "mean_band_pct"
-    total_power_col = "total_power" if "total_power" in summary_df.columns else "mean_total_power"
+    if "signal_power" in summary_df.columns:
+        total_power_col = "signal_power"
+    elif "mean_signal_power" in summary_df.columns:
+        total_power_col = "mean_signal_power"
+    else:
+        total_power_col = "total_power" if "total_power" in summary_df.columns else "mean_total_power"
     all_rows = summary_df[summary_df["channel"].isin(channels)].copy()
     rows = summary_df[
         (summary_df["variant"] != "raw")
@@ -600,6 +605,11 @@ def main():
                 "times": spectra["x"]["times"],
                 "power": spectra["x"]["power"] + spectra["y"]["power"],
             }
+            signal_powers = {
+                channel: float(np.mean(aligned["errors"][channel] ** 2))
+                for channel in ("x", "y", "z")
+            }
+            signal_powers["xy"] = signal_powers["x"] + signal_powers["y"]
 
             for channel in CHANNELS:
                 spec = spectra[channel]
@@ -612,6 +622,7 @@ def main():
                             "channel": channel,
                             "band_label": band_label,
                             **band_row,
+                            "signal_power": signal_powers[channel],
                             "n_points": aligned["n_points"],
                             "common_start": aligned["common_start"],
                             "common_end": aligned["common_end"],
@@ -651,6 +662,7 @@ def main():
                 recordings=("recording", "nunique"),
                 mean_band_power=("band_power", "mean"),
                 mean_total_power=("total_power", "mean"),
+                mean_signal_power=("signal_power", "mean"),
                 mean_band_pct=("band_pct", "mean"),
                 mean_ratio_to_raw=("ratio_to_raw", "mean"),
             )
