@@ -303,7 +303,7 @@ def parse_args():
     )
     parser.add_argument("--data_root", default="data/input", help="Input dataset root")
     parser.add_argument("--split", default="test", choices=["train", "val", "test"], help="Dataset split")
-    parser.add_argument("--v3_model", default="models/model_best_v3.keras", help="Frozen v3 model path")
+    parser.add_argument("--v3_model", default="models/model_final_v3.keras", help="Frozen v3 model path")
     parser.add_argument("--smooth_window", type=int, default=1800, help="Moving-average oracle window")
     parser.add_argument("--control_points", default="2,3,5,8", help="Comma-separated control point counts")
     parser.add_argument("--control_radius", type=int, default=90, help="Radius around each control point")

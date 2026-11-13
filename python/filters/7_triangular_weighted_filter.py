@@ -137,8 +137,10 @@ def triangular_filter_1d(data, window_size):
     # Normalizar pesos
     weights = weights / np.sum(weights)
     
-    # Aplicar convolución
-    filtered_data = np.convolve(data, weights, mode='same')
+    # Apply convolution with edge padding. Using mode='same' directly pads with
+    # zeros, which is invalid for lat/lon and creates huge jumps at track ends.
+    padded_data = np.pad(data, (half_window, half_window), mode='edge')
+    filtered_data = np.convolve(padded_data, weights, mode='valid')
     
     return filtered_data
 

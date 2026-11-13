@@ -1,5 +1,5 @@
 
-Reentrenar pasando más features: velocidad, delta XY, aceleración, cambio de rumbo, pausa/no pausa
+nn_pattern_anchors deja escalones de altura al inicio y fin de track
 
 Filtros especializados por artefacto
 	rebotes laterales;
@@ -8,3 +8,73 @@ Filtros especializados por artefacto
 	saltos puntuales;
 	subsampleo/regularización temporal;
 	suavizado vertical.
+	
+Hacer nuevos tracks.
+	wikiloc y sacar patrón
+	
+context_v1
+Input (3600, 15)
+  -> Masking
+  -> LSTM(128, return_sequences=True, dropout=0.1)
+  -> Dense(64, relu)
+  -> Dropout(0.2)
+  -> Dense(3, linear)
+Output: residual dx,dy,dz
+
+TCN_v1
+Input (3600, 15)
+  -> Conv1D(64, kernel=1)
+  -> LayerNorm
+  
+  -> ReLU
+
+  -> TCN block dilation=1
+  -> TCN block dilation=2
+  -> TCN block dilation=4
+  -> TCN block dilation=8
+  -> TCN block dilation=16
+  -> TCN block dilation=32
+  -> TCN block dilation=64
+  -> TCN block dilation=128
+
+  -> Dense(64, relu)
+  -> Dropout(0.2)
+  -> Dense(3, linear)
+Output: residual dx,dy,dz
+
+TCN_v2	
+Fast
+	Conv1D 64, kernel 3 o 5, dilation 1
+	LayerNorm
+	ReLU
+	Conv1D 64, kernel 3 o 5, dilation 1
+	LayerNorm
+	ReLU
+	Dense 32
+	Dense 3 -> fast_residual
+	
+Slow
+	Conv1D 64, kernel 1
+	LayerNorm
+	ReLU
+	TCN block dilation 1
+	TCN block dilation 2
+	TCN block dilation 4
+	TCN block dilation 8
+	TCN block dilation 16
+	TCN block dilation 32
+	TCN block dilation 64
+	TCN block dilation 128
+	Dense 64
+	Dense 3 -> slow_residual
+	
+TCN_block
+input
+  -> Conv1D(64, kernel=5, dilation=d, padding=same)
+  -> LayerNorm
+  -> ReLU
+  -> SpatialDropout1D(0.1)
+  -> Conv1D(64, kernel=1, padding=same)
+  -> LayerNorm
+  -> Add(input)
+  -> ReLU

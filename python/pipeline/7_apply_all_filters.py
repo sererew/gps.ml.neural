@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Script maestro para aplicar todos los filtros a todas las pasadas.
 
@@ -134,13 +134,19 @@ def run_filter(filter_script, input_file, output_file):
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
         
         # Ejecutar el filtro
-        cmd = [sys.executable, filter_script, input_file, output_file]
+        cmd = [sys.executable, "-X", "utf8", filter_script, input_file, output_file]
+        env = os.environ.copy()
+        env["PYTHONUTF8"] = "1"
+        env["PYTHONIOENCODING"] = "utf-8"
         
         start_time = time.time()
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=env,
             timeout=300  # 5 minutos maximo por filtro
         )
         elapsed = time.time() - start_time

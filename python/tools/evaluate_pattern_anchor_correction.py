@@ -294,7 +294,7 @@ def parse_args():
     )
     parser.add_argument("--data_root", default="data/input", help="Input dataset root")
     parser.add_argument("--split", default="test", choices=["train", "val", "test"], help="Dataset split")
-    parser.add_argument("--v3_model", default="models/model_best_v3.keras", help="Frozen v3 model path")
+    parser.add_argument("--v3_model", default="models/model_final_v3.keras", help="Frozen v3 model path")
     parser.add_argument("--smooth_window", type=int, default=1800, help="Moving-average oracle window")
     parser.add_argument("--anchors_per_hour", type=float, default=8.0, help="Anchor density per recording hour")
     parser.add_argument("--min_anchors", type=int, default=8, help="Minimum anchors per recording")

@@ -1,36 +1,27 @@
-# Librerías básicas para procesamiento de datos
-tqdm>=4.60.0
-numpy>=1.21.0
-pandas>=1.3.0
+# Active Python stack for gps.ml.neural.
+# Use Python 3.11.x. TensorFlow/Keras are pinned to match the A40 training stack.
 
-# Librerías para machine learning y redes neuronales
-# Nota: TensorFlow 2.15.x es la última versión estable con soporte completo para Python 3.11
-tensorflow>=2.15.0
-scikit-learn>=1.0.0
-h5py>=3.0.0
+tqdm==4.68.2
+numpy==2.4.6
+pandas==3.0.3
 
-# Librerías para visualización y gráficos
-matplotlib>=3.5.0
+# Machine learning and neural networks
+tensorflow==2.21.0
+keras==3.14.1
+scikit-learn==1.9.0
+h5py==3.14.0
 
-# Librerías para procesamiento de señales (filtros avanzados)
-scipy>=1.7.0
+# Visualization
+matplotlib==3.10.9
 
-# Librerías para análisis geoespacial y procesamiento GPX
-gpxpy>=1.5.0
-pyproj>=3.4.0
-geopy>=2.2.0
+# Signal processing
+scipy==1.17.1
 
-# Librerías para análisis de datos y exportación
-xlsxwriter>=3.0.0
-openpyxl>=3.0.0
+# GPX and geospatial processing
+gpxpy==1.6.2
+pyproj==3.7.2
+geopy==2.4.1
 
-# Nota: Las siguientes librerías son módulos estándar de Python y no requieren instalación:
-# - json (módulo estándar)
-# - os (módulo estándar)  
-# - time (módulo estándar)
-# - pathlib (módulo estándar desde Python 3.4+)
-# - datetime (módulo estándar)
-# - xml.etree.ElementTree (módulo estándar)
-# - argparse (módulo estándar)
-# - multiprocessing (módulo estándar)
-# - concurrent.futures (módulo estándar desde Python 3.2+)
+# Reports and spreadsheets
+xlsxwriter==3.2.9
+openpyxl==3.1.5

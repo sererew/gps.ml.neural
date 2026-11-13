@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Train a residual neural network for GPS track correction.
 
@@ -34,7 +34,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout, Masking
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.losses import MeanAbsoluteError, Huber
 import tensorflow.keras.backend as K
 
@@ -530,12 +530,6 @@ def train_model(dataset, model_config, fast_mode=False):
             restore_best_weights=True,
             verbose=1
         ),
-        ModelCheckpoint(
-            'models/model_best_v3.keras',
-            monitor='val_loss',
-            save_best_only=True,
-            verbose=1
-        ),
         ReduceLROnPlateau(
             monitor='val_loss',
             factor=0.5,
@@ -588,6 +582,9 @@ def train_model(dataset, model_config, fast_mode=False):
     # Save final model.
     model.save('models/model_final_v3.keras')
     print(f"Final model saved to: models/model_final_v3.keras")
+
+    model.save_weights('models/model_final_v3.weights.h5')
+    print(f"Final model weights saved to: models/model_final_v3.weights.h5")
     
     return model, history, test_metrics, training_time
 
